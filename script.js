@@ -561,132 +561,162 @@
     }
   }
 
-  // Builds a small sailboat. Local +X is the bow — everything downstream
-  // orients this group by rotating it around Y so the bow actually points the
-  // way it's travelling, instead of the hull sliding along sideways.
-  // `color` tints the sails, the gunwale rail, and the ship's own light.
+  // Builds a deluxe 3D sailing vessel. Local +X is the bow.
   function buildShip(color) {
     const group = new THREE.Group();
 
-    // ---- hull: a single closed, non-self-intersecting side profile ----
+    // 1. Sleek Luxury Hull
     const hullShape = new THREE.Shape();
-    hullShape.moveTo(-1.0, 0.15);                           // stern, deck corner
-    hullShape.quadraticCurveTo(-0.15, 0.27, 0.55, 0.2);      // sheer line rising toward bow
-    hullShape.quadraticCurveTo(0.95, 0.15, 1.25, 0.0);       // bow tip
-    hullShape.quadraticCurveTo(0.95, -0.17, 0.5, -0.21);     // keel curve back from bow
-    hullShape.quadraticCurveTo(-0.15, -0.27, -1.0, -0.05);   // keel to stern
-    hullShape.lineTo(-1.0, 0.15);                            // flat transom, closes the shape
+    hullShape.moveTo(-1.2, 0.18);
+    hullShape.quadraticCurveTo(-0.2, 0.32, 0.65, 0.24);
+    hullShape.quadraticCurveTo(1.15, 0.18, 1.45, 0.0);
+    hullShape.quadraticCurveTo(1.15, -0.2, 0.6, -0.25);
+    hullShape.quadraticCurveTo(-0.2, -0.32, -1.2, -0.06);
+    hullShape.lineTo(-1.2, 0.18);
 
-    const hullGeom = new THREE.ExtrudeGeometry(hullShape, { depth: 0.6, bevelEnabled: false, curveSegments: 20 });
-    hullGeom.translate(0, 0, -0.3); // center the width
+    const hullGeom = new THREE.ExtrudeGeometry(hullShape, { depth: 0.68, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.04, bevelThickness: 0.04, curveSegments: 24 });
+    hullGeom.translate(0, 0, -0.34);
 
-    // Taper the width so the hull pinches toward bow and stern and bellies out
-    // amidships — a rounded cross-section instead of a slab.
     const hp = hullGeom.attributes.position;
     for (let i = 0; i < hp.count; i++) {
       const x = hp.getX(i);
-      const t = clamp01((x + 1.0) / 2.25); // 0 at stern, 1 at bow tip
-      hp.setZ(i, hp.getZ(i) * (0.3 + 0.7 * Math.sin(Math.PI * t)));
+      const t = clamp01((x + 1.2) / 2.65);
+      hp.setZ(i, hp.getZ(i) * (0.28 + 0.72 * Math.sin(Math.PI * t)));
     }
     hp.needsUpdate = true;
     hullGeom.computeVertexNormals();
 
-    const hull = new THREE.Mesh(hullGeom, new THREE.MeshStandardMaterial({
-      color: 0x16304d, emissive: color, emissiveIntensity: 0.3, metalness: 0.2, roughness: 0.55
-    }));
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0x122438,
+      emissive: color,
+      emissiveIntensity: 0.35,
+      metalness: 0.35,
+      roughness: 0.45
+    });
+    const hull = new THREE.Mesh(hullGeom, hullMat);
     group.add(hull);
 
-    // ---- gunwale rail: a slim tube traced around the tapered deck edge ----
+    // 2. Polished Brass Deck Railing
     const railCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.0, 0.16, 0),
-      new THREE.Vector3(-0.15, 0.28, 0.20),
-      new THREE.Vector3(0.55, 0.21, 0.14),
-      new THREE.Vector3(1.25, 0.01, 0),
-      new THREE.Vector3(0.55, 0.21, -0.14),
-      new THREE.Vector3(-0.15, 0.28, -0.20),
-      new THREE.Vector3(-1.0, 0.16, 0)
+      new THREE.Vector3(-1.2, 0.19, 0),
+      new THREE.Vector3(-0.2, 0.33, 0.24),
+      new THREE.Vector3(0.65, 0.25, 0.16),
+      new THREE.Vector3(1.45, 0.01, 0),
+      new THREE.Vector3(0.65, 0.25, -0.16),
+      new THREE.Vector3(-0.2, 0.33, -0.24),
+      new THREE.Vector3(-1.2, 0.19, 0)
     ], true, 'catmullrom', 0.35);
-    group.add(new THREE.Mesh(
-      new THREE.TubeGeometry(railCurve, 64, 0.03, 6, true),
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.75, roughness: 0.4 })
-    ));
-
-    // ---- small deckhouse, just aft of the mast ----
-    const cabin = new THREE.Mesh(
-      new THREE.BoxGeometry(0.36, 0.2, 0.34),
-      new THREE.MeshStandardMaterial({ color: 0x18293f, roughness: 0.7 })
+    const rail = new THREE.Mesh(
+      new THREE.TubeGeometry(railCurve, 72, 0.035, 8, true),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.85, metalness: 0.6, roughness: 0.25 })
     );
-    cabin.position.set(-0.4, 0.31, 0);
-    group.add(cabin);
+    group.add(rail);
 
-    // ---- bowsprit, so the jib has somewhere to attach ----
+    // 3. Deluxe Mahogany Deckhouse & Glowing Windows
+    const cabinGroup = new THREE.Group();
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.48, 0.26, 0.38),
+      new THREE.MeshStandardMaterial({ color: 0x1a2b3c, roughness: 0.5, metalness: 0.2 })
+    );
+    cabin.position.set(-0.45, 0.34, 0);
+    cabinGroup.add(cabin);
+
+    // Glowing cabin windows
+    const windowMat = new THREE.MeshBasicMaterial({ color: 0xffe0a3 });
+    const w1 = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.1), windowMat);
+    w1.position.set(-0.45, 0.35, 0.2);
+    const w2 = w1.clone();
+    w2.position.set(-0.45, 0.35, -0.2);
+    w2.rotation.y = Math.PI;
+    cabinGroup.add(w1, w2);
+    group.add(cabinGroup);
+
+    // 4. Polished Wooden Bowsprit & Bow Lantern
     const bowsprit = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.02, 0.03, 0.6, 6),
-      new THREE.MeshStandardMaterial({ color: 0xc9b18c, roughness: 0.6 })
+      new THREE.CylinderGeometry(0.02, 0.04, 0.8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.7, roughness: 0.3 })
     );
     bowsprit.rotation.z = Math.PI / 2;
-    bowsprit.position.set(1.5, 0.1, 0);
+    bowsprit.position.set(1.7, 0.12, 0);
     group.add(bowsprit);
 
-    // ---- rudder ----
-    const rudder = new THREE.Mesh(
-      new THREE.BoxGeometry(0.05, 0.24, 0.16),
-      new THREE.MeshStandardMaterial({ color: 0x0e1f33, roughness: 0.6 })
+    // Glowing Bow Lantern
+    const lantern = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffe0a3 })
     );
-    rudder.position.set(-1.05, -0.08, 0);
-    group.add(rudder);
+    lantern.position.set(2.05, 0.12, 0);
+    group.add(lantern);
 
-    // ---- mast ----
-    const mastX = 0.25;
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.03, 0.045, 1.7, 8),
-      new THREE.MeshStandardMaterial({ color: 0xc9b18c, emissive: color, emissiveIntensity: 0.12, roughness: 0.6 })
+    // 5. Dual Tall Masts (Mainmast & Foremast)
+    const mainMastX = 0.15;
+    const mainMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.05, 2.1, 10),
+      new THREE.MeshStandardMaterial({ color: 0x3d2817, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 })
     );
-    mast.position.set(mastX, 1.05, 0);
-    group.add(mast);
+    mainMast.position.set(mainMastX, 1.22, 0);
 
+    const foreMastX = 0.85;
+    const foreMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.04, 1.6, 10),
+      new THREE.MeshStandardMaterial({ color: 0x3d2817, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 })
+    );
+    foreMast.position.set(foreMastX, 0.98, 0);
+    group.add(mainMast, foreMast);
+
+    // Cross yards (booms)
+    const yard1 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.9, 8),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.3 })
+    );
+    yard1.rotation.z = Math.PI / 2;
+    yard1.position.set(mainMastX - 0.25, 0.55, 0);
+
+    const yard2 = yard1.clone();
+    yard2.position.set(mainMastX - 0.25, 1.85, 0);
+    group.add(yard1, yard2);
+
+    // 6. Curving Wind-Blown Canvas Sails (Mainsail & Jib)
     const sailMat = new THREE.MeshStandardMaterial({
-      color, emissive: color, emissiveIntensity: 0.85,
-      side: THREE.DoubleSide, transparent: true, opacity: 0.97
+      color, emissive: color, emissiveIntensity: 0.9,
+      side: THREE.DoubleSide, transparent: true, opacity: 0.96, roughness: 0.3
     });
 
-    // ---- mainsail: leech curved outward as if filled with wind ----
     const mainSailShape = new THREE.Shape();
-    mainSailShape.moveTo(0, 0.85);
-    mainSailShape.quadraticCurveTo(-0.48, 0.1, -0.62, -0.55);
-    mainSailShape.lineTo(0, -0.65);
+    mainSailShape.moveTo(0, 1.05);
+    mainSailShape.quadraticCurveTo(-0.55, 0.2, -0.72, -0.65);
+    mainSailShape.lineTo(0, -0.75);
     mainSailShape.closePath();
-    const mainSail = new THREE.Mesh(new THREE.ShapeGeometry(mainSailShape, 12), sailMat);
-    mainSail.position.set(mastX, 1.05, 0.01);
+    const mainSail = new THREE.Mesh(new THREE.ShapeGeometry(mainSailShape, 16), sailMat);
+    mainSail.position.set(mainMastX, 1.2, 0.01);
     group.add(mainSail);
 
-    // ---- jib: run out to the bowsprit tip, the cue that reads "sailboat" ----
     const jibShape = new THREE.Shape();
-    jibShape.moveTo(0, 0.62);
-    jibShape.quadraticCurveTo(0.55, 0.22, 1.2, -0.08);
-    jibShape.lineTo(0, -0.42);
+    jibShape.moveTo(0, 0.72);
+    jibShape.quadraticCurveTo(0.65, 0.25, 1.35, -0.1);
+    jibShape.lineTo(0, -0.48);
     jibShape.closePath();
-    const jib = new THREE.Mesh(new THREE.ShapeGeometry(jibShape, 12), sailMat.clone());
-    jib.material.opacity = 0.9;
-    jib.position.set(mastX, 0.95, -0.01);
+    const jib = new THREE.Mesh(new THREE.ShapeGeometry(jibShape, 16), sailMat.clone());
+    jib.material.opacity = 0.92;
+    jib.position.set(mainMastX, 1.05, -0.01);
     group.add(jib);
 
-    // ---- masthead pennant ----
+    // 7. Fluttering Gold Silk Pennant Flag
     const pennantShape = new THREE.Shape();
     pennantShape.moveTo(0, 0);
-    pennantShape.lineTo(0.26, -0.05);
-    pennantShape.lineTo(0, -0.11);
+    pennantShape.lineTo(0.35, -0.06);
+    pennantShape.lineTo(0, -0.13);
     pennantShape.closePath();
     const pennant = new THREE.Mesh(
       new THREE.ShapeGeometry(pennantShape),
-      new THREE.MeshStandardMaterial({ color: 0xe9ce9a, emissive: 0xe9ce9a, emissiveIntensity: 0.5, side: THREE.DoubleSide })
+      new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.6, side: THREE.DoubleSide })
     );
-    pennant.position.set(mastX, 1.91, 0);
+    pennant.position.set(mainMastX, 2.27, 0);
     group.add(pennant);
 
-    // ---- warm point light, dark until the moment this ship is found ----
-    const light = new THREE.PointLight(0xe9ce9a, 0, 14);
-    light.position.set(0, 1.2, 0);
+    // 8. Warm Light Emission on Lock
+    const light = new THREE.PointLight(0xe9ce9a, 0, 15);
+    light.position.set(0, 1.3, 0);
     group.add(light);
     group.userData.light = light;
 
