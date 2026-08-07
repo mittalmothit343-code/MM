@@ -385,11 +385,11 @@
     applyFraming();
 
     // ---- lights ----
-    scene.add(new THREE.AmbientLight(0x5a789a, 0.85));
-    const moon = new THREE.DirectionalLight(0x9fc0e0, 0.7);
-    moon.position.set(-20, 30, -10);
-    const fillLight = new THREE.DirectionalLight(0x7dd3fc, 0.6);
-    fillLight.position.set(30, 25, 30);
+    scene.add(new THREE.AmbientLight(0x7090b5, 1.3));
+    const moon = new THREE.DirectionalLight(0xb5d8f7, 1.0);
+    moon.position.set(-20, 35, -10);
+    const fillLight = new THREE.DirectionalLight(0x90d5ff, 1.0);
+    fillLight.position.set(35, 25, 35);
     scene.add(moon, fillLight);
 
     // ---- starfield ----
@@ -430,7 +430,6 @@
       shipPos[i * 3] = (Math.random() - 0.5) * 160;
       shipPos[i * 3 + 1] = -1.05 + Math.random() * 0.25; // above the wave crests
       shipPos[i * 3 + 2] = (Math.random() - 0.5) * 160;
-      shipPos[i * 3 + 2] = (Math.random() - 0.5) * 160;
       shipDrift.push({ dir: Math.random() * Math.PI * 2, speed: 0.15 + Math.random() * 0.35 });
     }
     shipGeom.setAttribute('position', new THREE.BufferAttribute(shipPos, 3));
@@ -447,10 +446,10 @@
     scene.add(anonymousShips);
 
     // ---- Mohit & Sezal: dedicated small vessels ----
-    // Mohit sails in bright luminous azure-teal ('M'), Sezal in radiant coral-pink ('S') —
-    // high contrast, beautifully illuminated across the night water with initial flags on mainmasts.
-    shipMohit = buildShip(0x38bdf8, 'M');
-    shipSezal = buildShip(0xff8fa3, 'S');
+    // Mohit sails in bright luminous azure-teal ('MM'), Sezal in radiant coral-pink ('SS') —
+    // high contrast, brilliantly lit across the water with initials printed directly on the triangular sails.
+    shipMohit = buildShip(0x38bdf8, 'MM');
+    shipSezal = buildShip(0xff8fa3, 'SS');
     scene.add(shipMohit, shipSezal);
 
     ringMohit = buildGlowRing();
@@ -590,18 +589,18 @@
     hullGeom.computeVertexNormals();
 
     const hullMat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a5f,
+      color: color,                       // Full vibrant ship color (bright sky-blue for Mohit)
       emissive: color,
-      emissiveIntensity: 0.75,
-      metalness: 0.45,
-      roughness: 0.35
+      emissiveIntensity: 1.2,             // Brilliant self-illuminated glow
+      metalness: 0.1,
+      roughness: 0.15
     });
     const hull = new THREE.Mesh(hullGeom, hullMat);
     group.add(hull);
 
-    // Dedicated ambient ship deck light (ensures ship is always bright and glowing)
-    const deckLight = new THREE.PointLight(color, 1.2, 12);
-    deckLight.position.set(0, 0.9, 0);
+    // Dedicated ambient ship deck light (ensures ship is always brilliantly bright and glowing)
+    const deckLight = new THREE.PointLight(color, 5.5, 20);
+    deckLight.position.set(0, 1.5, 0);
     group.add(deckLight);
 
     // 2. Polished Brass Deck Railing
@@ -709,38 +708,32 @@
     jib.position.set(mainMastX, 1.05, -0.01);
     group.add(jib);
 
-    // 7. Fluttering Silk Pennant Flag with Initial ('M' or 'S')
-    const flagCanvas = document.createElement('canvas');
-    flagCanvas.width = 256; flagCanvas.height = 128;
-    const fCtx = flagCanvas.getContext('2d');
-    fCtx.fillStyle = '#060b14';
-    fCtx.fillRect(0, 0, 256, 128);
-    fCtx.lineWidth = 8;
-    fCtx.strokeStyle = '#ffd700';
-    fCtx.strokeRect(4, 4, 248, 120);
-    fCtx.font = '900 84px "Space Mono", "Fraunces", sans-serif';
-    fCtx.textAlign = 'center';
-    fCtx.textBaseline = 'middle';
-    fCtx.fillStyle = '#ffd700';
-    fCtx.shadowColor = 'rgba(255, 215, 0, 0.9)';
-    fCtx.shadowBlur = 14;
-    fCtx.fillText(initial, 128, 64);
+    // 7. Initial Inscription ("MM" or "SS") Printed Directly on the Triangular Mainsail
+    if (initial) {
+      const sailCanvas = document.createElement('canvas');
+      sailCanvas.width = 512; sailCanvas.height = 512;
+      const sCtx = sailCanvas.getContext('2d');
+      sCtx.clearRect(0, 0, 512, 512);
+      sCtx.font = '900 150px "Space Mono", "Fraunces", Georgia, serif';
+      sCtx.textAlign = 'center';
+      sCtx.textBaseline = 'middle';
+      sCtx.fillStyle = '#ffffff';
+      sCtx.shadowColor = '#ffd700';
+      sCtx.shadowBlur = 24;
+      sCtx.fillText(initial, 256, 256);
 
-    const flagTexture = new THREE.CanvasTexture(flagCanvas);
-    const pennantMat = new THREE.MeshStandardMaterial({
-      map: flagTexture,
-      emissive: 0xffd700,
-      emissiveIntensity: 0.7,
-      side: THREE.DoubleSide,
-      roughness: 0.3
-    });
+      const sailInitTex = new THREE.CanvasTexture(sailCanvas);
+      const sailInitMat = new THREE.MeshBasicMaterial({
+        map: sailInitTex,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
 
-    const pennant = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.7, 0.38),
-      pennantMat
-    );
-    pennant.position.set(mainMastX + 0.32, 2.15, 0);
-    group.add(pennant);
+      const sailInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 1.05), sailInitMat);
+      sailInscription.position.set(mainMastX - 0.28, 1.08, 0.05);
+      group.add(sailInscription);
+    }
 
     // 8. Warm Light Emission on Lock
     const light = new THREE.PointLight(0xe9ce9a, 0, 15);
