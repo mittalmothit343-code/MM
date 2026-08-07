@@ -464,9 +464,16 @@
 
     // ---- golden glow burst at the meeting ----
     const glowGeom = new THREE.SphereGeometry(1, 24, 24);
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0xe9ce9a, transparent: true, opacity: 0 });
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xe9ce9a,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,            // Never clips or occludes ship masts/sails
+      blending: THREE.AdditiveBlending
+    });
     goldenGlow = new THREE.Mesh(glowGeom, glowMat);
-    goldenGlow.position.set(0, -0.5, -1);
+    goldenGlow.position.set(0, -1.2, -1);
+    goldenGlow.renderOrder = 3;
     goldenGlow.visible = false;
     scene.add(goldenGlow);
 
