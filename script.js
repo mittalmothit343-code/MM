@@ -323,14 +323,17 @@
   const MEET_S = { x: 3.4, z: 1.7 };
 
   // The path Chapter Two sails along: point 0 is just past the meeting,
-  // points 1..n are the harbor islands, the last point is where it closes.
-  // Kept well past z=-20 (Chapter One's final "horizon" camera looks toward
-  // z=-20) so the first island never peeks into view before Chapter Two starts.
+  // points 1..n are the harbor islands in an organic scenic zig-zag pattern.
   const ISLAND_PATH = [{ x: 0, z: -3 }];
   CONFIG.harbors.forEach((_, i) => {
-    ISLAND_PATH.push({ x: i % 2 === 0 ? -15 : 16, z: -52 - i * 24 });
+    // Dynamic scenic Zig-Zag archipelago pattern: alternates wide left (-25 to -31) and wide right (+25 to +31)
+    // with 36 units Z separation so each island and text sits cleanly in view without overlapping!
+    const sideSign = (i % 2 === 0) ? -1 : 1;
+    const xOffset = sideSign * (25 + (i % 3) * 6);
+    const zOffset = -56 - i * 36;
+    ISLAND_PATH.push({ x: xOffset, z: zOffset });
   });
-  ISLAND_PATH.push({ x: 0, z: ISLAND_PATH[ISLAND_PATH.length - 1].z - 22 });
+  ISLAND_PATH.push({ x: 0, z: ISLAND_PATH[ISLAND_PATH.length - 1].z - 30 });
 
   const shipDrift = []; // per-anonymous-ship random drift vectors
 
