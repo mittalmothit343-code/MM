@@ -385,10 +385,10 @@
     applyFraming();
 
     // ---- lights ----
-    scene.add(new THREE.AmbientLight(0x7090b5, 1.3));
-    const moon = new THREE.DirectionalLight(0xb5d8f7, 1.0);
+    scene.add(new THREE.AmbientLight(0x5a7599, 0.95));
+    const moon = new THREE.DirectionalLight(0x9bc2e8, 0.75);
     moon.position.set(-20, 35, -10);
-    const fillLight = new THREE.DirectionalLight(0x90d5ff, 1.0);
+    const fillLight = new THREE.DirectionalLight(0x75bdf7, 0.75);
     fillLight.position.set(35, 25, 35);
     scene.add(moon, fillLight);
 
@@ -446,10 +446,10 @@
     scene.add(anonymousShips);
 
     // ---- Mohit & Sezal: dedicated small vessels ----
-    // Mohit sails in bright luminous azure-teal ('MM'), Sezal in radiant coral-pink ('SS') —
-    // high contrast, brilliantly lit across the water with initials printed directly on the triangular sails.
-    shipMohit = buildShip(0x38bdf8, 'MM');
-    shipSezal = buildShip(0xff8fa3, 'SS');
+    // Mohit sails in bright luminous azure-teal ('MM'), Sezal in soft romantic coral-pink ('SS')
+    // individually tuned for perfect visual balance across night lighting.
+    shipMohit = buildShip(0x38bdf8, 'MM', { emissiveIntensity: 1.1, deckLightIntensity: 5.0 });
+    shipSezal = buildShip(0xff8fa3, 'SS', { emissiveIntensity: 0.38, deckLightIntensity: 1.6 });
     scene.add(shipMohit, shipSezal);
 
     ringMohit = buildGlowRing();
@@ -563,8 +563,11 @@
     }
   }
 
-  // Builds a deluxe 3D sailing vessel with initial flag ('M' or 'S') on mainmast. Local +X is the bow.
-  function buildShip(color, initial = '') {
+  // Builds a deluxe 3D sailing vessel with sail initials ('MM' or 'SS'). Local +X is the bow.
+  function buildShip(color, initial = '', opts = {}) {
+    const emissiveIntensity = opts.emissiveIntensity !== undefined ? opts.emissiveIntensity : 0.6;
+    const deckLightIntensity = opts.deckLightIntensity !== undefined ? opts.deckLightIntensity : 2.5;
+
     const group = new THREE.Group();
 
     // 1. Sleek Luxury Hull
@@ -589,17 +592,17 @@
     hullGeom.computeVertexNormals();
 
     const hullMat = new THREE.MeshStandardMaterial({
-      color: color,                       // Full vibrant ship color (bright sky-blue for Mohit)
+      color: color,                       // Ship color accent
       emissive: color,
-      emissiveIntensity: 1.2,             // Brilliant self-illuminated glow
+      emissiveIntensity: emissiveIntensity, // Self-illuminated glow level
       metalness: 0.1,
-      roughness: 0.15
+      roughness: 0.2
     });
     const hull = new THREE.Mesh(hullGeom, hullMat);
     group.add(hull);
 
-    // Dedicated ambient ship deck light (ensures ship is always brilliantly bright and glowing)
-    const deckLight = new THREE.PointLight(color, 5.5, 20);
+    // Dedicated ambient ship deck light (ensures ship is tuned to perfection)
+    const deckLight = new THREE.PointLight(color, deckLightIntensity, 18);
     deckLight.position.set(0, 1.5, 0);
     group.add(deckLight);
 
@@ -685,7 +688,7 @@
 
     // 6. Curving Wind-Blown Canvas Sails (Mainsail & Jib)
     const sailMat = new THREE.MeshStandardMaterial({
-      color, emissive: color, emissiveIntensity: 1.25,
+      color, emissive: color, emissiveIntensity: Math.min(1.25, emissiveIntensity * 1.1),
       side: THREE.DoubleSide, transparent: true, opacity: 0.98, roughness: 0.25
     });
 
