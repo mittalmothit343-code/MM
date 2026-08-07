@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Two Ships in an Infinite Ocean — Mohit &amp; Sezal</title>
+<meta name="description" content="Out of millions of ships sailing in the dark, two found the same destination. The story of Mohit and Sezal." />
+<meta name="theme-color" content="#060B14" />
+
+<!-- Link previews. Add assets/og.jpg (1200x630) to make shared links show a picture. -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Two Ships in an Infinite Ocean — Mohit &amp; Sezal" />
+<meta property="og:description" content="Out of millions of ships sailing in the dark, two found the same destination." />
+<meta property="og:image" content="assets/og.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<!-- Ship favicon, drawn inline so there is no file to go missing -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23060B14'/%3E%3Cg stroke='%23C6A05F' stroke-width='4' fill='none'%3E%3Cpath d='M10 40 L54 40 L46 52 L18 52 Z'/%3E%3Cline x1='32' y1='40' x2='32' y2='14'/%3E%3C/g%3E%3Cpath d='M32 16 L46 30 L32 30 Z' fill='%23C6A05F'/%3E%3C/svg%3E" />
+
+<!-- Fonts: Fraunces (display, nautical/organic serif) + Inter (body) + Space Mono (HUD / radar readout) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Inter:wght@400..600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- LOADER -->
+<!-- ============================================================ -->
+<div id="loader" role="status" aria-label="Loading the ocean">
+  <div class="loader-inner">
+    <svg class="loader-ship" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+      <path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/>
+    </svg>
+    <p class="loader-text">Charting the ocean<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+    <div class="loader-bar"><div class="loader-bar-fill" id="loaderFill"></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ENTRY GATE — choose the film or the scroll story -->
+<!-- ============================================================ -->
+<div id="entryGate" aria-hidden="true">
+  <div class="entry-inner">
+    <p class="entry-eyebrow">A story for two</p>
+    <h1 class="entry-title">Two Ships in an<br/>Infinite Ocean</h1>
+    <p class="entry-sub">Best experienced with sound, and a few quiet minutes.</p>
+    <div class="entry-actions">
+      <button id="watchFilm" class="btn btn-gold">
+        <span class="btn-play" aria-hidden="true">▶</span> Watch the film
+        <span class="btn-meta">1:52</span>
+      </button>
+      <button id="exploreScroll" class="btn btn-ghost">Explore manually</button>
+      <button id="autoWatchScroll" class="btn btn-ghost btn-auto-watch">
+        <span class="btn-icon">✨</span> Auto-Watch Story
+      </button>
+    </div>
+    <div class="entry-prefs">
+      <label class="entry-pref">
+        <input type="checkbox" id="soundToggle" checked />
+        <span>Sound</span>
+      </label>
+      <label class="entry-pref">
+        <input type="checkbox" id="reducedMotionToggle" />
+        <span>Reduced motion</span>
+      </label>
+    </div>
+    <p class="entry-fallback" id="entryFallback" hidden>
+      The 3D libraries could not be reached. Check your connection and reload —
+      the story needs Three.js and GSAP from the CDN.
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FIXED CANVAS — Three.js ocean, sky, ships all live here -->
+<!-- ============================================================ -->
+<canvas id="oceanCanvas" aria-hidden="true"></canvas>
+
+<!-- One full-bleed grade over the scene, so story text has contrast to sit on
+     whether the sky behind it is midnight or sunrise. -->
+<div class="canvas-scrim" aria-hidden="true"></div>
+
+<!-- ============================================================ -->
+<!-- RADAR HUD — the signature instrument, persists scenes 2–7 -->
+<!-- ============================================================ -->
+<div id="radarHUD" class="radar-hud" aria-hidden="true">
+  <div class="radar-frame">
+    <svg class="radar-face" viewBox="0 0 200 200" width="600" height="600">
+      <circle cx="100" cy="100" r="98" class="radar-ring radar-ring-outer"/>
+      <circle cx="100" cy="100" r="72" class="radar-ring"/>
+      <circle cx="100" cy="100" r="46" class="radar-ring"/>
+      <circle cx="100" cy="100" r="20" class="radar-ring"/>
+      <line x1="100" y1="2" x2="100" y2="198" class="radar-cross"/>
+      <line x1="2" y1="100" x2="198" y2="100" class="radar-cross"/>
+      <g id="radarSweepGroup">
+        <path d="M100 100 L100 2 A98 98 0 0 1 145 14 Z" fill="url(#sweepGradient)"/>
+      </g>
+      <defs>
+        <radialGradient id="sweepGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(100 100) rotate(90) scale(98)">
+          <stop offset="0%" stop-color="var(--color-radar)" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="var(--color-radar)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <g id="radarBlips"></g>
+    </svg>
+    <div class="radar-readout">
+      <span id="radarStatus">SEARCHING</span>
+      <span id="radarCoords" class="radar-coords">18.52 N · 73.86 E</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CINEMA LAYER — everything the film needs, dormant until played -->
+<!-- ============================================================ -->
+<div id="cinema" class="cinema" hidden>
+  <div class="cinema-bar cinema-bar-top" aria-hidden="true"></div>
+  <div class="cinema-bar cinema-bar-bottom" aria-hidden="true"></div>
+  <div class="cinema-vignette" aria-hidden="true"></div>
+  <div class="cinema-grain" aria-hidden="true"></div>
+
+  <!-- Captions are pre-rendered by script.js §8 so the film scrubs cleanly
+       in both directions instead of firing one-way callbacks. -->
+  <div class="cinema-captions" id="cinemaCaptions" aria-live="polite"></div>
+
+  <!-- The transport reads as a chart rule: chapters are ports along it and
+       the playhead is the ship, sailing left to right. -->
+  <div class="transport" id="transport">
+    <button class="transport-btn" id="filmPlayPause" aria-label="Pause film">
+      <span class="tp-icon" id="filmPlayIcon" aria-hidden="true">❚❚</span>
+    </button>
+
+    <div class="transport-chart" id="transportChart" role="slider" tabindex="0"
+         aria-label="Film position" aria-valuemin="0" aria-valuemax="112" aria-valuenow="0"
+         aria-valuetext="0 seconds">
+      <div class="chart-rule" aria-hidden="true"></div>
+      <div class="chart-sailed" id="chartSailed" aria-hidden="true"></div>
+      <div class="chart-ports" id="chartPorts" aria-hidden="true"></div>
+      <div class="chart-ship" id="chartShip" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="18" height="18">
+          <path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="4"/>
+          <line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="4"/>
+          <path d="M32 16 L46 30 L32 30 Z" fill="currentColor"/>
+        </svg>
+      </div>
+    </div>
+
+    <p class="transport-time"><span id="filmTime">0:00</span><span class="tp-sep">/</span><span id="filmDur">1:52</span></p>
+    <button class="transport-btn transport-exit" id="cinemaExit" aria-label="Leave the film">Exit</button>
+  </div>
+
+  <!-- End plate -->
+  <div class="cinema-end" id="cinemaEnd" hidden>
+    <p class="entry-eyebrow">Fin</p>
+    <h2 class="cinema-end-title">Mohit &amp; Sezal</h2>
+    <div class="cinema-end-actions">
+      <button class="btn btn-gold" id="filmReplay">Watch again</button>
+      <button class="btn btn-ghost" id="filmToStory">Explore at your own pace</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCROLL CONTENT — every scene is a section GSAP/ScrollTrigger hooks into -->
+<!-- ============================================================ -->
+<main id="story">
+
+  <!-- ============================================================ -->
+  <!-- CHAPTER ONE — how they found each other. The cinematic camera,
+       ocean, and radar choreography in script.js is scoped to this div,
+       so anything added after it (Chapter Two, etc.) is free to behave
+       differently without breaking this sequence. -->
+  <!-- ============================================================ -->
+  <div id="chapterOne">
+
+  <!-- SCENE 1 — Dark ocean, hundreds of anonymous ships -->
+  <section class="scene" id="scene-1" data-scene="1" aria-label="An ocean at night, full of ships">
+    <div class="scene-content">
+      <p class="eyebrow">I.</p>
+      <h2 class="scene-title">An ocean, at night.</h2>
+      <p class="scene-copy">Hundreds of small lights move across the dark water.<br/>Each one is someone, going somewhere.</p>
+      <p class="scene-copy scene-copy-quiet">Somewhere among them — two of these lights belong to no one you'd recognize yet.</p>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><div class="scroll-cue-line"></div></div>
+  </section>
+
+  <!-- SCENE 2 — Radar begins searching -->
+  <section class="scene" id="scene-2" data-scene="2" aria-label="A radar begins to search the ocean">
+    <div class="scene-content">
+      <p class="eyebrow">II.</p>
+      <h2 class="scene-title">Something begins to search.</h2>
+      <p class="scene-copy">Sweep after sweep, it reaches into the dark —<br/>testing every light it finds.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 3 — Mohit detected -->
+  <section class="scene" id="scene-3" data-scene="3" aria-label="Mohit's ship is found">
+    <div class="scene-content">
+      <p class="eyebrow">III.</p>
+      <h2 class="scene-title scene-title-name" id="nameMohit">MOHIT</h2>
+      <p class="scene-copy">One light answers differently.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 4 — Sezal detected -->
+  <section class="scene" id="scene-4" data-scene="4" aria-label="Sezal's ship is found">
+    <div class="scene-content">
+      <p class="eyebrow">IV.</p>
+      <h2 class="scene-title scene-title-name" id="nameSezal">SEZAL</h2>
+      <p class="scene-copy">And somewhere else — so does another.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 5 — Lock + isolate -->
+  <section class="scene" id="scene-5" data-scene="5" aria-label="The radar locks onto both ships">
+    <div class="scene-content">
+      <p class="eyebrow">V.</p>
+      <h2 class="scene-title">Target locked. Twice.</h2>
+      <p class="scene-copy">Every other light fades.<br/>Only these two remain.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 6 — Sailing toward each other -->
+  <section class="scene" id="scene-6" data-scene="6" aria-label="The two ships sail toward one another">
+    <div class="scene-content">
+      <p class="eyebrow">VI.</p>
+      <h2 class="scene-title">Two courses, quietly changing.</h2>
+      <p class="scene-copy">Neither one turns back.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 7 — Meeting -->
+  <section class="scene" id="scene-7" data-scene="7" aria-label="The ships meet in a glow of light">
+    <div class="scene-content">
+      <p class="eyebrow">VII.</p>
+      <h2 class="scene-title">Target found.</h2>
+      <p class="scene-copy">A glow spreads across the water.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 8 — Poetic line -->
+  <section class="scene scene-quote" id="scene-8" data-scene="8" aria-label="A poem about two hearts finding the same destination">
+    <div class="scene-content">
+      <p class="quote-line" data-line="1">In a sea filled with countless journeys,</p>
+      <p class="quote-line quote-line-gold" data-line="2">two hearts discovered the same destination.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 9 — Our Roka -->
+  <section class="scene scene-roka" id="scene-9" data-scene="9" aria-label="Our Roka announcement">
+    <div class="scene-content">
+      <p class="eyebrow eyebrow-gold">Together, henceforth</p>
+      <h2 class="roka-title">Our Roka</h2>
+      <p class="roka-date" id="rokaDate"></p>
+      <p class="scene-copy">Mohit &amp; Sezal</p>
+    </div>
+  </section>
+
+  <!-- SCENE 10 — Sunrise / horizon -->
+  <section class="scene scene-horizon" id="scene-10" data-scene="10" aria-label="Sunrise on the horizon, the beginning of a journey">
+    <div class="scene-content">
+      <h2 class="scene-title">This is only the beginning…</h2>
+      <p class="scene-copy">Two ships. One ocean. One direction, now.</p>
+      <button class="btn btn-ghost btn-gallery-jump" id="continueStory">Continue the story →</button>
+    </div>
+  </section>
+
+  </div> <!-- /#chapterOne -->
+
+  <!-- ============================================================ -->
+  <!-- CHAPTER TWO — SMALL HARBORS
+       The ships aren't searching anymore. Each scene below is one time
+       you met after the Roka. The names and copy come from CONFIG.harbors
+       in script.js §0 — edit them there, in one place, and every scene,
+       island label and popup updates together.
+       Scoped in its own div so the camera sails its own path here,
+       independent of Chapter One's timeline. -->
+  <!-- ============================================================ -->
+  <div id="chapterTwo">
+
+  <section class="scene chapter-divider" id="chapter-two-intro" aria-label="Chapter Two begins">
+    <div class="scene-content">
+      <p class="eyebrow eyebrow-gold">Chapter Two</p>
+      <h2 class="scene-title">Small Harbors</h2>
+      <p class="scene-copy">The ships stopped searching.<br/>They started visiting.</p>
+    </div>
+  </section>
+
+  <!-- SCENES 11–14 — one per harbor. Content is injected from CONFIG.harbors. -->
+  <section class="scene scene-harbor" id="scene-11" data-scene="11" data-island="0">
+    <div class="scene-content">
+      <p class="eyebrow" data-harbor-eyebrow></p>
+      <h2 class="scene-title" data-harbor-name></h2>
+      <p class="scene-copy" data-harbor-story></p>
+      <p class="scene-copy scene-copy-quiet" data-harbor-gift></p>
+      <div class="keepsake-row" data-keepsake aria-hidden="true">
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <span class="keepsake-track"><span class="keepsake-gem" aria-hidden="true"></span></span>
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <svg class="keepsake-chest" viewBox="0 0 64 48" width="34" height="26" aria-label="A keepsake, kept">
+          <rect x="8" y="18" width="48" height="26" rx="3" class="chest-body"/>
+          <path d="M8 18 Q32 4 56 18" class="chest-lid"/>
+          <rect x="29" y="20" width="6" height="8" rx="1" class="chest-clasp"/>
+        </svg>
+      </div>
+      <div class="harbor-photos-inline" data-harbor-photos-inline aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="scene scene-harbor" id="scene-12" data-scene="12" data-island="1">
+    <div class="scene-content">
+      <p class="eyebrow" data-harbor-eyebrow></p>
+      <h2 class="scene-title" data-harbor-name></h2>
+      <p class="scene-copy" data-harbor-story></p>
+      <p class="scene-copy scene-copy-quiet" data-harbor-gift></p>
+      <div class="keepsake-row" data-keepsake aria-hidden="true">
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <span class="keepsake-track"><span class="keepsake-gem" aria-hidden="true"></span></span>
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <svg class="keepsake-chest" viewBox="0 0 64 48" width="34" height="26" aria-label="A keepsake, kept">
+          <rect x="8" y="18" width="48" height="26" rx="3" class="chest-body"/>
+          <path d="M8 18 Q32 4 56 18" class="chest-lid"/>
+          <rect x="29" y="20" width="6" height="8" rx="1" class="chest-clasp"/>
+        </svg>
+      </div>
+      <div class="harbor-photos-inline" data-harbor-photos-inline aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="scene scene-harbor" id="scene-13" data-scene="13" data-island="2">
+    <div class="scene-content">
+      <p class="eyebrow" data-harbor-eyebrow></p>
+      <h2 class="scene-title" data-harbor-name></h2>
+      <p class="scene-copy" data-harbor-story></p>
+      <p class="scene-copy scene-copy-quiet" data-harbor-gift></p>
+      <div class="keepsake-row" data-keepsake aria-hidden="true">
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <span class="keepsake-track"><span class="keepsake-gem" aria-hidden="true"></span></span>
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <svg class="keepsake-chest" viewBox="0 0 64 48" width="34" height="26" aria-label="A keepsake, kept">
+          <rect x="8" y="18" width="48" height="26" rx="3" class="chest-body"/>
+          <path d="M8 18 Q32 4 56 18" class="chest-lid"/>
+          <rect x="29" y="20" width="6" height="8" rx="1" class="chest-clasp"/>
+        </svg>
+      </div>
+      <div class="harbor-photos-inline" data-harbor-photos-inline aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="scene scene-harbor" id="scene-14" data-scene="14" data-island="3">
+    <div class="scene-content">
+      <p class="eyebrow" data-harbor-eyebrow></p>
+      <h2 class="scene-title" data-harbor-name></h2>
+      <p class="scene-copy" data-harbor-story></p>
+      <p class="scene-copy scene-copy-quiet" data-harbor-gift></p>
+      <div class="keepsake-row" data-keepsake aria-hidden="true">
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <span class="keepsake-track"><span class="keepsake-gem" aria-hidden="true"></span></span>
+        <svg class="keepsake-ship" viewBox="0 0 64 64" width="26" height="26"><path d="M10 40 L54 40 L46 52 L18 52 Z" fill="none" stroke="currentColor" stroke-width="2"/><line x1="32" y1="40" x2="32" y2="14" stroke="currentColor" stroke-width="2"/><path d="M32 16 L46 30 L32 30 Z" fill="currentColor" opacity="0.85"/></svg>
+        <svg class="keepsake-chest" viewBox="0 0 64 48" width="34" height="26" aria-label="A keepsake, kept">
+          <rect x="8" y="18" width="48" height="26" rx="3" class="chest-body"/>
+          <path d="M8 18 Q32 4 56 18" class="chest-lid"/>
+          <rect x="29" y="20" width="6" height="8" rx="1" class="chest-clasp"/>
+        </svg>
+      </div>
+      <div class="harbor-photos-inline" data-harbor-photos-inline aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- SCENE 15 — chapter close -->
+  <section class="scene chapter-divider" id="scene-15-chest" aria-label="Four keepsakes kept so far">
+    <div class="scene-content">
+      <p class="eyebrow">So far</p>
+      <h2 class="scene-title">Four keepsakes.<br/>One chest.</h2>
+      <div class="chest-final" aria-hidden="true">
+        <svg class="chest-final-icon" viewBox="0 0 64 48" width="72" height="54">
+          <rect x="8" y="18" width="48" height="26" rx="3" class="chest-body"/>
+          <path d="M8 18 Q32 4 56 18" class="chest-lid"/>
+          <rect x="29" y="20" width="6" height="8" rx="1" class="chest-clasp"/>
+        </svg>
+        <div class="chest-final-gems">
+          <span class="gem-dot"></span><span class="gem-dot"></span><span class="gem-dot"></span><span class="gem-dot"></span>
+        </div>
+      </div>
+      <p class="scene-copy">Small things, kept — with more harbors ahead.</p>
+      <div class="scene-actions">
+        <button class="btn btn-ghost" id="jumpToGallery">See our journey so far ↓</button>
+        <button class="btn btn-ghost" id="watchFilmFromStory">▶ Watch the film</button>
+      </div>
+    </div>
+  </section>
+
+  </div> <!-- /#chapterTwo -->
+
+  <!-- ============================================================ -->
+  <!-- SHIP'S LOG — the dated milestones, in order. Built from
+       CONFIG.milestones by initTimeline(). Sits outside #chapterTwo so it
+       does not stretch that chapter's camera scrub. -->
+  <!-- ============================================================ -->
+  <section class="log-section" id="ships-log" aria-label="The dates so far">
+    <div class="log-header">
+      <p class="eyebrow eyebrow-gold">Ship's log</p>
+      <h2 class="scene-title">Where we've been</h2>
+    </div>
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- GALLERY -->
+  <!-- ============================================================ -->
+  <section class="gallery-section" id="gallery" aria-label="Photo gallery">
+    <div class="gallery-header">
+      <p class="eyebrow">Our Journey Together</p>
+      <h2 class="scene-title">Moments, so far</h2>
+      <p class="scene-copy" id="galleryEmptyNote" hidden>Nothing here yet. Drop your photos into the <code>assets/photos</code> folder, named <code>1.jpg</code>, <code>2.jpg</code>, <code>3.jpg</code> and so on — they will appear here the next time this page loads.</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid" role="list"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Mohit &amp; Sezal — <span id="footerYear"></span></p>
+  </footer>
+
+</main>
+
+<!-- ============================================================ -->
+<!-- LIGHTBOX -->
+<!-- ============================================================ -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
+  <button class="lightbox-close" id="lightboxClose" aria-label="Close photo viewer">✕</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous photo">‹</button>
+  <img class="lightbox-img" id="lightboxImg" alt="" />
+  <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next photo">›</button>
+  <p class="lightbox-counter" id="lightboxCounter"></p>
+</div>
+
+<!-- ============================================================ -->
+<!-- ISLAND POPUP — opens when you click a harbor island -->
+<!-- ============================================================ -->
+<div class="island-modal" id="islandModal" role="dialog" aria-modal="true" aria-label="Photos from this harbor" hidden>
+  <div class="island-modal-card">
+    <button class="lightbox-close" id="islandModalClose" aria-label="Close">✕</button>
+    <p class="island-modal-eyebrow" id="islandModalDate"></p>
+    <h3 class="island-modal-title" id="islandModalTitle"></h3>
+    <div class="island-modal-grid" id="islandModalGrid"></div>
+    <p class="island-modal-note" id="islandModalNote"></p>
+  </div>
+</div>
+
+<!-- Floating Auto-Watch Widget for Scroll Mode -->
+<div id="autoWatchWidget" class="auto-watch-widget" hidden>
+  <button id="awPlayPauseBtn" class="aw-btn" aria-label="Pause Auto-Watch">
+    <span id="awIcon">❚❚</span>
+  </button>
+  <span class="aw-title">Auto Watch</span>
+  <button id="awSpeedBtn" class="aw-speed-btn" title="Change Auto-Scroll Speed">1.0x</button>
+  <div class="aw-progress-track"><div id="awProgressFill" class="aw-progress-fill"></div></div>
+  <button id="awCloseBtn" class="aw-close-btn" title="Exit Auto-Watch">✕</button>
+</div>
+
+<!-- Audio Controls Widget (Mute Toggle + Volume Slider + Master Song Manager) -->
+<div id="audioControlWidget" class="audio-control-widget" hidden>
+  <div id="audioPanel" class="audio-panel" hidden>
+    <div class="audio-panel-row">
+      <span class="audio-panel-label">Volume</span>
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.7" aria-label="Master Volume">
+      <span id="volumeVal" class="audio-panel-val">70%</span>
+    </div>
+    <div class="audio-panel-divider"></div>
+    <div class="scene-audio-header">
+      <span>Master Theme Song</span>
+    </div>
+    <div class="scene-audio-list">
+      <div class="scene-audio-row">
+        <span class="scene-name">Chand Mera Dil</span>
+        <button id="changeSongBtn" class="scene-file-pick-btn active-file">chand_mera_dil.mp3</button>
+      </div>
+    </div>
+    <input type="file" id="sceneAudioFileInput" accept="audio/*" style="display:none;">
+  </div>
+  <button id="muteToggle" class="mute-toggle" aria-label="Audio settings" aria-pressed="true">
+    <span class="mute-icon" aria-hidden="true">♪</span>
+  </button>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
