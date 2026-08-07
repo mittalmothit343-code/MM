@@ -1699,39 +1699,14 @@
     return romanticNodes;
   }
 
-  // Single Master Soundtrack Engine (Chand Mera Dil / assets/audio/chand_mera_dil.mp3)
+  // Single Master Soundtrack Engine (Chand Mera Dil)
   let mainAudioTrack = null;
 
   function initMainSoundtrack() {
     if (mainAudioTrack) return;
-    mainAudioTrack = new Audio();
+    mainAudioTrack = new Audio('chand_mera_dil.mp3');
     mainAudioTrack.loop = true;
     mainAudioTrack.preload = 'auto';
-
-    // Auto-probe root folder main soundtrack first, then assets subfolder
-    const candidates = [
-      'chand_mera_dil.mp3',
-      'music.mp3',
-      'assets/audio/chand_mera_dil.mp3',
-      'assets/audio/music.mp3'
-    ];
-
-    let loaded = false;
-    candidates.forEach((srcUrl) => {
-      if (loaded) return;
-      const testAudio = new Audio();
-      testAudio.oncanplaythrough = () => {
-        if (loaded) return;
-        loaded = true;
-        mainAudioTrack = testAudio;
-        mainAudioTrack.loop = true;
-        mainAudioTrack.volume = state.soundEnabled ? state.volume : 0;
-        if (state.soundEnabled && state.hasUserInteracted) mainAudioTrack.play().catch(() => {});
-      };
-      testAudio.src = srcUrl;
-    });
-
-    mainAudioTrack.src = 'chand_mera_dil.mp3';
     mainAudioTrack.volume = state.soundEnabled ? state.volume : 0;
   }
 
