@@ -725,7 +725,7 @@
   }
 
   function initWakeParticles() {
-    const count = 40;
+    const count = 120;
     const geomM = new THREE.BufferGeometry();
     const geomS = new THREE.BufferGeometry();
     const posM = new Float32Array(count * 3);
@@ -735,10 +735,10 @@
     geomS.setAttribute('position', new THREE.BufferAttribute(posS, 3));
 
     const matM = new THREE.PointsMaterial({
-      color: 0x59f2c4, size: 0.75, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0x59f2c4, size: 1.6, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
     });
     const matS = new THREE.PointsMaterial({
-      color: 0xe9ce9a, size: 0.75, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0xe9ce9a, size: 1.6, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
     });
 
     wakeParticlesMohit = new THREE.Points(geomM, matM);
@@ -747,8 +747,8 @@
     wakeParticlesSezal.userData = { positions: posS, count, pool: [] };
 
     for (let i = 0; i < count; i++) {
-      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, life: 0, maxLife: 1.5 });
-      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, life: 0, maxLife: 1.5 });
+      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.2 });
+      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.2 });
     }
 
     scene.add(wakeParticlesMohit, wakeParticlesSezal);
@@ -768,16 +768,23 @@
     const { pool, positions, count } = wakeSystem.userData;
     const posAttr = wakeSystem.geometry.attributes.position;
 
-    if (Math.random() < 0.4) {
+    // Spawn foamy wake particles trailing behind the stern
+    if (Math.random() < 0.85) {
       const inactive = pool.find((p) => p.life <= 0);
       if (inactive) {
         const angle = ship.rotation.y;
         const cos = Math.cos(angle), sin = Math.sin(angle);
-        const sternX = ship.position.x - cos * 1.4 + (Math.random() - 0.5) * 0.5;
-        const sternZ = ship.position.z + sin * 1.4 + (Math.random() - 0.5) * 0.5;
+        const perpX = -sin, perpZ = cos;
+        const sideSpread = (Math.random() - 0.5) * 0.6;
+        
+        const sternX = ship.position.x - cos * 1.75 + perpX * sideSpread;
+        const sternZ = ship.position.z + sin * 1.75 + perpZ * sideSpread;
+        
         inactive.x = sternX;
         inactive.z = sternZ;
-        inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.05;
+        inactive.vx = -cos * 0.12 + perpX * sideSpread * 0.2;
+        inactive.vz = sin * 0.12 + perpZ * sideSpread * 0.2;
+        inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.06;
         inactive.life = inactive.maxLife;
       }
     }
@@ -785,8 +792,10 @@
     for (let i = 0; i < count; i++) {
       const p = pool[i];
       if (p.life > 0) {
-        p.life -= 0.02;
-        p.y = OCEAN_Y + waveHeight(p.x, p.z, t) + 0.05;
+        p.life -= 0.016;
+        p.x += p.vx * 0.05;
+        p.z += p.vz * 0.05;
+        p.y = OCEAN_Y + waveHeight(p.x, p.z, t) + 0.06;
         positions[i * 3] = p.x;
         positions[i * 3 + 1] = p.y;
         positions[i * 3 + 2] = p.z;
