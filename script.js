@@ -36,7 +36,7 @@
         short: '30 MAY',
         numeral: 'XI',
         name: 'The First Harbor',
-        story: 'The first time we met after the Roka. No searching, no radar — just somewhere to be, together.',
+        story: 'No radar needed now — just two ships anchored side-by-side.',
         gift: 'Something small came home with us that day.'
       },
       {
@@ -44,7 +44,7 @@
         short: '26 JUN',
         numeral: 'XII',
         name: 'The Harbor of Small Errands',
-        story: 'Shopping, which is mostly an excuse. Lists get written. Very little gets bought.',
+        story: 'Small everyday errands together, mostly an excuse just to hold hands.',
         gift: 'One more thing for the chest.'
       },
       {
@@ -52,7 +52,7 @@
         short: '10 JUL',
         numeral: 'XIII',
         name: 'The Same Harbor, Again',
-        story: 'Shopping again. We are getting better at pretending this is about the shopping.',
+        story: 'Returning to our favorite quiet spots, building sweet routines together.',
         gift: 'Another keepsake, quietly kept.'
       },
       {
@@ -60,7 +60,7 @@
         short: '25 JUL',
         numeral: 'XIV',
         name: 'The Harbor With No Reason',
-        story: 'No errand this time, no list. Just to meet — which turned out to be reason enough.',
+        story: 'Meeting for no special reason at all — because being together is everything.',
         gift: 'The fourth thing in the chest.'
       }
     ],
@@ -1271,6 +1271,10 @@
     shipMohit.rotation.y = headingY;
     shipSezal.rotation.y = headingY;
 
+    // Ensure target rings stay smoothly & permanently lit throughout harbour navigation
+    setShipFound(shipMohit, ringMohit, true);
+    setShipFound(shipSezal, ringSezal, true);
+
     if (moveCamera) {
       cameraBase.pos = [p.x - p.dx * camDist, camHeight, p.z - p.dz * camDist];
       cameraBase.look = [p.x, -0.5, p.z];
@@ -2398,12 +2402,12 @@
     // 2. The fleet — down at the waterline, lights streaming past
     cut(14, [0, 7, 26], [0, -1, -6]);
     move(14, 7, [0, 5.5, 16], [0, -1, -8]);
-    cue(15.2, 4.6, 'sub', 'Hundreds of small lights.<br/>Each one is someone, going somewhere.');
+    cue(15.2, 4.6, 'sub', 'Hundreds of quiet lights.<br/>Each one a soul in motion, searching for somewhere to belong.');
 
     // 3. The search — rise, and the instrument wakes up
     cut(21, [0, 17, 27], [0, 0, -4]);
     move(21, 7, [0, 20, 21], [0, 0, -6]);
-    cue(22.2, 4.6, 'sub', 'Something begins to search.');
+    cue(22.2, 4.6, 'sub', 'Sweep after sweep, a pulse reaches through the dark.');
 
     /* ================= ACT II — THE FINDING ================= */
 
@@ -2420,30 +2424,30 @@
     // 6. The lock — pull wide, the rest of the ocean goes quiet
     cut(44, [0, 22, 38], [1, -1, -1]);
     move(44, 7, [0, 17, 31], [0, -1, -1]);
-    cue(45.2, 4.6, 'sub', 'Every other light fades.<br/>Only these two remain.');
+    cue(45.2, 4.6, 'sub', 'The rest of the world fades into quiet silence.<br/>Only Mohit &amp; Sezal remain.');
 
     // 7. The approach — the only long, unbroken shot in the film
     cut(51, [0, 11, 24], [0, -1, 0]);
     move(51, 10, [0, 6.5, 13], [0, -1, 0], 'sine.inOut');
-    cue(52.4, 6, 'sub', 'Two courses, quietly changing.<br/>Neither one turns back.');
+    cue(52.4, 6, 'sub', 'Two ships turn toward each other across the sea,<br/>neither one ever looking back.');
 
     /* ================= ACT III — WHAT CAME AFTER ================= */
 
     // 8. The meeting
     cut(61, [0, 4, 9.5], [0, -0.6, 0]);
     move(61, 7, [0, 3.2, 7], [0, -0.6, 0], 'sine.out');
-    cue(62.4, 4.2, 'sub', 'Target found.');
+    cue(62.4, 4.2, 'sub', 'Destination reached.');
 
     // 9. The line
     move(68, 9, [0, 4.4, 10.5], [0, -0.5, -3], 'sine.inOut');
     cue(69, 7, 'quote',
-      '<p class="cue-main">In a sea filled with countless journeys,<br/><em>two hearts discovered the same destination.</em></p>');
+      '<p class="cue-main">In an ocean of millions of journeys,<br/><em>two hearts discovered their forever home.</em></p>');
 
     // 10. Our Roka — and the night finally turns
     move(77, 9, [0, 3.4, 6], [0, -0.4, -1], 'sine.inOut');
     tl.to(film.sky, { dawn: 1, duration: 19, ease: 'sine.inOut' }, 74);
     cue(78, 7, 'roka',
-      `<p class="cue-eyebrow">Together, henceforth</p><p class="cue-main">Our Roka</p><p class="cue-foot">${CONFIG.rokaDate}</p>`);
+      `<p class="cue-eyebrow">Bound by love, united forever</p><p class="cue-main">Our Roka</p><p class="cue-foot">${CONFIG.rokaDate}</p>`);
 
     // 11. Small harbors — the ships stop searching and start visiting
     // From here the harbour walker owns the camera, so the shot is expressed
