@@ -447,10 +447,10 @@
     scene.add(anonymousShips);
 
     // ---- Mohit & Sezal: dedicated small vessels ----
-    // Mohit sails in bright luminous azure-teal, Sezal in radiant coral-pink —
-    // high contrast, beautifully illuminated across the night water.
-    shipMohit = buildShip(0x38bdf8);
-    shipSezal = buildShip(0xff8fa3);
+    // Mohit sails in bright luminous azure-teal ('M'), Sezal in radiant coral-pink ('S') —
+    // high contrast, beautifully illuminated across the night water with initial flags on mainmasts.
+    shipMohit = buildShip(0x38bdf8, 'M');
+    shipSezal = buildShip(0xff8fa3, 'S');
     scene.add(shipMohit, shipSezal);
 
     ringMohit = buildGlowRing();
@@ -564,8 +564,8 @@
     }
   }
 
-  // Builds a deluxe 3D sailing vessel. Local +X is the bow.
-  function buildShip(color) {
+  // Builds a deluxe 3D sailing vessel with initial flag ('M' or 'S') on mainmast. Local +X is the bow.
+  function buildShip(color, initial = '') {
     const group = new THREE.Group();
 
     // 1. Sleek Luxury Hull
@@ -709,17 +709,37 @@
     jib.position.set(mainMastX, 1.05, -0.01);
     group.add(jib);
 
-    // 7. Fluttering Gold Silk Pennant Flag
-    const pennantShape = new THREE.Shape();
-    pennantShape.moveTo(0, 0);
-    pennantShape.lineTo(0.35, -0.06);
-    pennantShape.lineTo(0, -0.13);
-    pennantShape.closePath();
+    // 7. Fluttering Silk Pennant Flag with Initial ('M' or 'S')
+    const flagCanvas = document.createElement('canvas');
+    flagCanvas.width = 256; flagCanvas.height = 128;
+    const fCtx = flagCanvas.getContext('2d');
+    fCtx.fillStyle = '#060b14';
+    fCtx.fillRect(0, 0, 256, 128);
+    fCtx.lineWidth = 8;
+    fCtx.strokeStyle = '#ffd700';
+    fCtx.strokeRect(4, 4, 248, 120);
+    fCtx.font = '900 84px "Space Mono", "Fraunces", sans-serif';
+    fCtx.textAlign = 'center';
+    fCtx.textBaseline = 'middle';
+    fCtx.fillStyle = '#ffd700';
+    fCtx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+    fCtx.shadowBlur = 14;
+    fCtx.fillText(initial, 128, 64);
+
+    const flagTexture = new THREE.CanvasTexture(flagCanvas);
+    const pennantMat = new THREE.MeshStandardMaterial({
+      map: flagTexture,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.7,
+      side: THREE.DoubleSide,
+      roughness: 0.3
+    });
+
     const pennant = new THREE.Mesh(
-      new THREE.ShapeGeometry(pennantShape),
-      new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.6, side: THREE.DoubleSide })
+      new THREE.PlaneGeometry(0.7, 0.38),
+      pennantMat
     );
-    pennant.position.set(mainMastX, 2.27, 0);
+    pennant.position.set(mainMastX + 0.32, 2.15, 0);
     group.add(pennant);
 
     // 8. Warm Light Emission on Lock
@@ -785,15 +805,16 @@
         const angle = ship.rotation.y;
         const cos = Math.cos(angle), sin = Math.sin(angle);
         const perpX = -sin, perpZ = cos;
-        const sideSpread = (Math.random() - 0.5) * 0.65;
-        
+        // Reduced thickness by 35% (0.65 -> 0.42) while preserving full tail length (maxLife = 2.8)
+        const sideSpread = (Math.random() - 0.5) * 0.42;
+
         const sternX = ship.position.x - cos * 1.8 + perpX * sideSpread;
         const sternZ = ship.position.z + sin * 1.75 + perpZ * sideSpread;
-        
+
         inactive.x = sternX;
         inactive.z = sternZ;
-        inactive.vx = -cos * 0.14 + perpX * sideSpread * 0.25;
-        inactive.vz = sin * 0.14 + perpZ * sideSpread * 0.25;
+        inactive.vx = -cos * 0.14 + perpX * sideSpread * 0.15;
+        inactive.vz = sin * 0.14 + perpZ * sideSpread * 0.15;
         inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.07;
         inactive.life = inactive.maxLife;
       }
@@ -1010,7 +1031,7 @@
     // 1. Segmented Ringed Trunk
     const trunkSegments = 10;
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a321a, roughness: 0.85 });
-    
+
     let currentPos = new THREE.Vector3(0, 0, 0);
 
     for (let i = 0; i < trunkSegments; i++) {
@@ -1868,7 +1889,7 @@
     }
     mainAudioTrack.volume = state.volume;
     if (mainAudioTrack.paused) {
-      mainAudioTrack.play().catch(() => {});
+      mainAudioTrack.play().catch(() => { });
     }
   }
 
@@ -3049,7 +3070,7 @@
           mainAudioTrack.volume = state.soundEnabled ? state.volume : 0;
           changeBtn.textContent = file.name;
           if (state.soundEnabled) {
-            mainAudioTrack.play().catch(() => {});
+            mainAudioTrack.play().catch(() => { });
           }
         }
       });
@@ -3085,7 +3106,7 @@
         } else {
           if (mainAudioTrack) {
             mainAudioTrack.src = 'chand_mera_dil.mp3';
-            if (state.soundEnabled) mainAudioTrack.play().catch(() => {});
+            if (state.soundEnabled) mainAudioTrack.play().catch(() => { });
           }
         }
       });
@@ -3099,7 +3120,7 @@
           mainAudioTrack = new Audio(URL.createObjectURL(file));
           mainAudioTrack.loop = true;
           mainAudioTrack.volume = state.soundEnabled ? state.volume : 0;
-          if (state.soundEnabled) mainAudioTrack.play().catch(() => {});
+          if (state.soundEnabled) mainAudioTrack.play().catch(() => { });
         }
       });
     }
