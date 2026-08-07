@@ -661,21 +661,14 @@
     lantern.position.set(2.05, 0.12, 0);
     group.add(lantern);
 
-    // 5. Dual Tall Masts (Mainmast & Foremast)
+    // 5. Tall Main Mast
     const mainMastX = 0.15;
     const mainMast = new THREE.Mesh(
       new THREE.CylinderGeometry(0.03, 0.05, 2.1, 10),
       new THREE.MeshStandardMaterial({ color: 0x3d2817, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 })
     );
     mainMast.position.set(mainMastX, 1.22, 0);
-
-    const foreMastX = 0.85;
-    const foreMast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.04, 1.6, 10),
-      new THREE.MeshStandardMaterial({ color: 0x3d2817, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 })
-    );
-    foreMast.position.set(foreMastX, 0.98, 0);
-    group.add(mainMast, foreMast);
+    group.add(mainMast);
 
     // Cross yards (booms)
     const yard1 = new THREE.Mesh(
@@ -720,12 +713,19 @@
       hullCanvas.width = 512; hullCanvas.height = 256;
       const hCtx = hullCanvas.getContext('2d');
       hCtx.clearRect(0, 0, 512, 256);
-      hCtx.font = '900 130px "Space Mono", "Fraunces", Georgia, serif';
+      hCtx.font = '500 136px "Inter", "Space Mono", Georgia, serif';
       hCtx.textAlign = 'center';
       hCtx.textBaseline = 'middle';
-      hCtx.fillStyle = '#ffd700';
-      hCtx.shadowColor = 'rgba(255, 215, 0, 0.95)';
-      hCtx.shadowBlur = 22;
+      
+      // Dark outline for ultra-high contrast and zero blur
+      hCtx.lineWidth = 12;
+      hCtx.strokeStyle = 'rgba(6, 11, 20, 0.95)';
+      hCtx.strokeText(initial, 256, 128);
+
+      // Crisp Pearl-White Fill
+      hCtx.fillStyle = '#ffffff';
+      hCtx.shadowColor = 'rgba(255, 255, 255, 0.85)';
+      hCtx.shadowBlur = 14;
       hCtx.fillText(initial, 256, 128);
 
       const hullInitTex = new THREE.CanvasTexture(hullCanvas);
@@ -1065,9 +1065,9 @@
     const frondGroup = new THREE.Group();
     frondGroup.position.copy(crownPos);
 
-    const frondMatOuter = new THREE.MeshStandardMaterial({ color: 0x1b4d3e, roughness: 0.5, side: THREE.DoubleSide });
-    const frondMatInner = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.4, side: THREE.DoubleSide });
-    const frondMatHighlight = new THREE.MeshStandardMaterial({ color: 0x52b788, roughness: 0.35, side: THREE.DoubleSide });
+    const frondMatOuter = new THREE.MeshStandardMaterial({ color: 0x278ea5, emissive: 0x1b4d3e, emissiveIntensity: 0.35, roughness: 0.4, side: THREE.DoubleSide });
+    const frondMatInner = new THREE.MeshStandardMaterial({ color: 0x2dc653, emissive: 0x1e6f3d, emissiveIntensity: 0.35, roughness: 0.35, side: THREE.DoubleSide });
+    const frondMatHighlight = new THREE.MeshStandardMaterial({ color: 0x52b788, emissive: 0x2d6a4f, emissiveIntensity: 0.4, roughness: 0.3, side: THREE.DoubleSide });
 
     const frondCount = 16;
     for (let f = 0; f < frondCount; f++) {
@@ -1077,8 +1077,8 @@
 
       const leafShape = new THREE.Shape();
       leafShape.moveTo(0, 0);
-      leafShape.quadraticCurveTo(0.35, 0.18, 1.45, -0.65);
-      leafShape.quadraticCurveTo(0.28, 0.04, 0, 0);
+      leafShape.quadraticCurveTo(0.38, 0.2, 1.55, -0.7);
+      leafShape.quadraticCurveTo(0.3, 0.05, 0, 0);
 
       const leafGeom = new THREE.ShapeGeometry(leafShape, 16);
       const leafMat = (f % 3 === 0) ? frondMatHighlight : (f % 2 === 0 ? frondMatOuter : frondMatInner);
@@ -1087,7 +1087,7 @@
       // Dual-tier drooping angle for heavy tropical look
       const tierPitch = (f % 2 === 0) ? 0.32 : 0.52;
       leaf.rotation.x = tierPitch + (f % 3) * 0.08;
-      leaf.scale.set(2.2 * heightScale, 1.8 * heightScale, 2.2 * heightScale);
+      leaf.scale.set(2.5 * heightScale, 2.0 * heightScale, 2.5 * heightScale);
 
       frondMeshGroup.add(leaf);
       frondGroup.add(frondMeshGroup);
@@ -1095,11 +1095,11 @@
     treeGroup.add(frondGroup);
 
     // 3. Heavy Coconuts Cluster
-    const coconutMat = new THREE.MeshStandardMaterial({ color: 0x3d2718, roughness: 0.8 });
+    const coconutMat = new THREE.MeshStandardMaterial({ color: 0x4a321a, roughness: 0.7 });
     for (let c = 0; c < 5; c++) {
-      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.14 * heightScale, 8, 8), coconutMat);
+      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.15 * heightScale, 8, 8), coconutMat);
       const cAngle = (c / 5) * Math.PI * 2;
-      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.22, crownPos.y - 0.15, crownPos.z + Math.sin(cAngle) * 0.22);
+      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.24, crownPos.y - 0.16, crownPos.z + Math.sin(cAngle) * 0.24);
       treeGroup.add(coconut);
     }
 
@@ -1110,30 +1110,35 @@
   function buildIsland(dateLabel, harborIndex) {
     const group = new THREE.Group();
 
-    // Mound & beach terrain
+    // High-intensity warm harbour island spotlight
+    const islandSpotlight = new THREE.PointLight(0xffbe66, 5.0, 22);
+    islandSpotlight.position.set(0, 3.2, 0);
+    group.add(islandSpotlight);
+
+    // Earthen mound & beach terrain
     const mound = new THREE.Mesh(
-      new THREE.ConeGeometry(4.4, 5.6, 16),
-      new THREE.MeshStandardMaterial({ color: 0x3d3226, roughness: 0.9 })
+      new THREE.ConeGeometry(4.8, 5.8, 16),
+      new THREE.MeshStandardMaterial({ color: 0x241d17, roughness: 0.9 })
     );
     mound.position.y = -2.4;
     group.add(mound);
 
     const cap = new THREE.Mesh(
-      new THREE.ConeGeometry(3.5, 0.95, 16),
-      new THREE.MeshStandardMaterial({ color: 0xd2ba92, roughness: 0.8 })
+      new THREE.ConeGeometry(3.8, 1.0, 16),
+      new THREE.MeshStandardMaterial({ color: 0x9e825a, roughness: 0.8 })
     );
     cap.position.y = -0.15;
     group.add(cap);
 
     const beach = new THREE.Mesh(
-      new THREE.CylinderGeometry(6.0, 7.0, 0.38, 24),
-      new THREE.MeshStandardMaterial({ color: 0xe5d2aa, roughness: 0.85 })
+      new THREE.CylinderGeometry(6.4, 7.4, 0.42, 24),
+      new THREE.MeshStandardMaterial({ color: 0x7a6344, roughness: 0.85 })
     );
     beach.position.y = -1.88;
     group.add(beach);
 
     // Shoreline rocks
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x2e271f, roughness: 0.9 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x1a1511, roughness: 0.9 });
     for (let i = 0; i < 8; i++) {
       const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.25 + Math.random() * 0.22, 0), rockMat);
       const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.4;
@@ -1144,8 +1149,8 @@
     }
 
     // ---- AUTHENTIC PORT HARBOUR QUAY & DOCK ----
-    const portStoneMat = new THREE.MeshStandardMaterial({ color: 0x42382e, roughness: 0.85 });
-    const portWoodMat = new THREE.MeshStandardMaterial({ color: 0x5a4332, roughness: 0.75 });
+    const portStoneMat = new THREE.MeshStandardMaterial({ color: 0x221b16, roughness: 0.9 });
+    const portWoodMat = new THREE.MeshStandardMaterial({ color: 0x332216, roughness: 0.8 });
     const isRightSide = (harborIndex % 2 === 0);
     const sideSign = isRightSide ? -1 : 1;
     const quayLen = 4.2;
@@ -1249,21 +1254,21 @@
       });
     }
 
-    // Floating date label sprite
+    // High-visibility floating date label sprite (elevated above palm canopy with depthTest false)
     const canvas = document.createElement('canvas');
-    canvas.width = 320; canvas.height = 120;
+    canvas.width = 512; canvas.height = 180;
     const ctx = canvas.getContext('2d');
-    ctx.font = '600 46px "Space Mono", monospace';
+    ctx.font = '700 58px "Space Mono", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(233,206,154,0.65)';
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = 'rgba(233,206,154,0.95)';
-    ctx.fillText(dateLabel, 160, 60);
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(dateLabel, 256, 90);
     const texture = new THREE.CanvasTexture(canvas);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-    sprite.scale.set(4.4, 1.65, 1);
-    sprite.position.set(0, 4.4, 0);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
+    sprite.scale.set(5.8, 2.1, 1);
+    sprite.position.set(0, 6.8, 0);
     group.add(sprite);
 
     Object.assign(group.userData, { mound, cap, sprite, flag, harborIndex, dateLabel });
