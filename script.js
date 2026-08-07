@@ -714,31 +714,39 @@
     jib.position.set(mainMastX, 1.05, -0.01);
     group.add(jib);
 
-    // 7. Initial Inscription ("MM" or "SS") Printed Directly on the Triangular Mainsail
+    // 7. Name Initials ("MM" or "SS") Inscribed on Both Sides (Port & Starboard) of the Hull
     if (initial) {
-      const sailCanvas = document.createElement('canvas');
-      sailCanvas.width = 512; sailCanvas.height = 512;
-      const sCtx = sailCanvas.getContext('2d');
-      sCtx.clearRect(0, 0, 512, 512);
-      sCtx.font = '900 150px "Space Mono", "Fraunces", Georgia, serif';
-      sCtx.textAlign = 'center';
-      sCtx.textBaseline = 'middle';
-      sCtx.fillStyle = '#ffffff';
-      sCtx.shadowColor = '#ffd700';
-      sCtx.shadowBlur = 24;
-      sCtx.fillText(initial, 256, 256);
+      const hullCanvas = document.createElement('canvas');
+      hullCanvas.width = 512; hullCanvas.height = 256;
+      const hCtx = hullCanvas.getContext('2d');
+      hCtx.clearRect(0, 0, 512, 256);
+      hCtx.font = '900 130px "Space Mono", "Fraunces", Georgia, serif';
+      hCtx.textAlign = 'center';
+      hCtx.textBaseline = 'middle';
+      hCtx.fillStyle = '#ffd700';
+      hCtx.shadowColor = 'rgba(255, 215, 0, 0.95)';
+      hCtx.shadowBlur = 22;
+      hCtx.fillText(initial, 256, 128);
 
-      const sailInitTex = new THREE.CanvasTexture(sailCanvas);
-      const sailInitMat = new THREE.MeshBasicMaterial({
-        map: sailInitTex,
+      const hullInitTex = new THREE.CanvasTexture(hullCanvas);
+      const hullInitMat = new THREE.MeshBasicMaterial({
+        map: hullInitTex,
         transparent: true,
         side: THREE.DoubleSide,
         depthWrite: false
       });
 
-      const sailInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 1.05), sailInitMat);
-      sailInscription.position.set(mainMastX - 0.28, 1.08, 0.05);
-      group.add(sailInscription);
+      // Starboard side (Right Flank)
+      const starboardInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.5), hullInitMat);
+      starboardInscription.position.set(0.1, 0.08, 0.36);
+      starboardInscription.rotation.y = 0.06;
+      group.add(starboardInscription);
+
+      // Port side (Left Flank)
+      const portInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.5), hullInitMat);
+      portInscription.position.set(0.1, 0.08, -0.36);
+      portInscription.rotation.y = -0.06;
+      group.add(portInscription);
     }
 
     // 8. Warm Light Emission on Lock
@@ -1410,18 +1418,40 @@
 
   /* ---- shared world helpers, used by both the story and the film ---- */
 
-  // Position along ISLAND_PATH. segF is in "segments": 0 is the first path
-  // point, 1 is the second, and so on.
+  function lerpAngle(a, b, t) {
+    let diff = (b - a) % (Math.PI * 2);
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    if (diff > Math.PI) diff -= Math.PI * 2;
+    return a + diff * t;
+  }
+
+  // Smooth 3D Catmull-Rom Spline Curve through all harbour waypoints
+  let HARBOR_SPLINE = null;
+  function getHarborSpline() {
+    if (!HARBOR_SPLINE) {
+      HARBOR_SPLINE = new THREE.CatmullRomCurve3(
+        ISLAND_PATH.map(p => new THREE.Vector3(p.x, 0, p.z)),
+        false,         // open curve
+        'catmullrom',  // smooth spline interpolation
+        0.5            // tension
+      );
+    }
+    return HARBOR_SPLINE;
+  }
+
+  // Position & smooth tangent vector along the Catmull-Rom harbour spline.
   function pathAt(segF) {
-    const segments = ISLAND_PATH.length - 1;
-    const f = clamp(segF, 0, segments);
-    const segIdx = Math.min(Math.floor(f), segments - 1);
-    const segT = f - segIdx;
-    const a = ISLAND_PATH[segIdx], b = ISLAND_PATH[segIdx + 1];
-    let dx = b.x - a.x, dz = b.z - a.z;
+    const spline = getHarborSpline();
+    const totalSegs = ISLAND_PATH.length - 1;
+    const u = clamp01(segF / totalSegs);
+    
+    const point = spline.getPointAt(u);
+    const tangent = spline.getTangentAt(u);
+    let dx = tangent.x, dz = tangent.z;
     const dlen = Math.hypot(dx, dz) || 1;
     dx /= dlen; dz /= dlen;
-    return { x: lerp(a.x, b.x, segT), z: lerp(a.z, b.z, segT), dx, dz, perpX: -dz, perpZ: dx };
+    
+    return { x: point.x, z: point.z, dx, dz, perpX: -dz, perpZ: dx };
   }
 
   // Sails both ships (and optionally the camera) to a point on the harbor path.
@@ -1437,9 +1467,18 @@
     shipSezal.position.x = p.x + p.perpX * (laneOffset + shipGap / 2);
     shipSezal.position.z = p.z + p.perpZ * (laneOffset + shipGap / 2);
 
-    const headingY = Math.atan2(-p.dz, p.dx);
-    shipMohit.rotation.y = headingY;
-    shipSezal.rotation.y = headingY;
+    const targetHeading = Math.atan2(-p.dz, p.dx);
+    if (shipMohit.userData.lastHeading === undefined) {
+      shipMohit.userData.lastHeading = targetHeading;
+      shipSezal.userData.lastHeading = targetHeading;
+    }
+    const smoothHeadingM = lerpAngle(shipMohit.userData.lastHeading, targetHeading, 0.25);
+    const smoothHeadingS = lerpAngle(shipSezal.userData.lastHeading, targetHeading, 0.25);
+    shipMohit.userData.lastHeading = smoothHeadingM;
+    shipSezal.userData.lastHeading = smoothHeadingS;
+
+    shipMohit.rotation.y = smoothHeadingM;
+    shipSezal.rotation.y = smoothHeadingS;
 
     // Ensure target rings stay smoothly & permanently lit throughout harbour navigation
     setShipFound(shipMohit, ringMohit, true);
