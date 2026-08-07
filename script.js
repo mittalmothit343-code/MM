@@ -323,14 +323,14 @@
   const MEET_S = { x: 3.4, z: 1.7 };
 
   // The path Chapter Two sails along: point 0 is just past the meeting,
-  // points 1..n are the harbor islands in an organic scenic zig-zag pattern.
+  // points 1..n are the harbor islands in a balanced scenic zig-zag pattern.
   const ISLAND_PATH = [{ x: 0, z: -3 }];
   CONFIG.harbors.forEach((_, i) => {
-    // Dynamic scenic Zig-Zag archipelago pattern: alternates wide left (-25 to -31) and wide right (+25 to +31)
-    // with 36 units Z separation so each island and text sits cleanly in view without overlapping!
+    // Balanced scenic Zig-Zag archipelago pattern: alternates -18 (left) and +18 (right)
+    // with 34 units Z separation so each island, text, and ship stays 100% in frame!
     const sideSign = (i % 2 === 0) ? -1 : 1;
-    const xOffset = sideSign * (25 + (i % 3) * 6);
-    const zOffset = -56 - i * 36;
+    const xOffset = sideSign * (18 + (i % 3) * 3);
+    const zOffset = -56 - i * 34;
     ISLAND_PATH.push({ x: xOffset, z: zOffset });
   });
   ISLAND_PATH.push({ x: 0, z: ISLAND_PATH[ISLAND_PATH.length - 1].z - 30 });
@@ -1023,11 +1023,11 @@
     return monumentGroup;
   }
 
-  // Builds a highly detailed, realistic tropical palm tree
-  function buildPalmTree(heightScale = 1, tiltAngle = 0) {
+  // Builds a highly detailed, heavy, realistic tropical palm tree
+  function buildPalmTree(heightScale = 1.3, tiltAngle = 0) {
     const treeGroup = new THREE.Group();
 
-    // 1. Segmented Ringed Trunk
+    // 1. Heavy Segmented Ringed Trunk
     const trunkSegments = 10;
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a321a, roughness: 0.85 });
 
@@ -1035,12 +1035,12 @@
 
     for (let i = 0; i < trunkSegments; i++) {
       const progress = i / trunkSegments;
-      const radiusTop = (0.13 - progress * 0.05) * heightScale;
-      const radiusBottom = (0.16 - progress * 0.05) * heightScale;
-      const segHeight = (0.32 * heightScale);
+      const radiusTop = (0.22 - progress * 0.08) * heightScale;
+      const radiusBottom = (0.28 - progress * 0.08) * heightScale;
+      const segHeight = (0.36 * heightScale);
 
       const segment = new THREE.Mesh(
-        new THREE.CylinderGeometry(radiusTop, radiusBottom, segHeight, 8),
+        new THREE.CylinderGeometry(radiusTop, radiusBottom, segHeight, 10),
         trunkMat
       );
       segment.position.copy(currentPos);
@@ -1049,18 +1049,19 @@
       treeGroup.add(segment);
 
       currentPos.y += segHeight;
-      currentPos.x += Math.sin(tiltAngle) * 0.08;
+      currentPos.x += Math.sin(tiltAngle) * 0.1;
     }
 
-    // 2. Realistic Arching Palm Leaves (Fronds)
+    // 2. Heavy Dense Arching Palm Canopy (16 Fronds in Dual Tiers)
     const crownPos = currentPos.clone();
     const frondGroup = new THREE.Group();
     frondGroup.position.copy(crownPos);
 
-    const frondMatOuter = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.5, side: THREE.DoubleSide });
-    const frondMatInner = new THREE.MeshStandardMaterial({ color: 0x52b788, roughness: 0.4, side: THREE.DoubleSide });
+    const frondMatOuter = new THREE.MeshStandardMaterial({ color: 0x1b4d3e, roughness: 0.5, side: THREE.DoubleSide });
+    const frondMatInner = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.4, side: THREE.DoubleSide });
+    const frondMatHighlight = new THREE.MeshStandardMaterial({ color: 0x52b788, roughness: 0.35, side: THREE.DoubleSide });
 
-    const frondCount = 10;
+    const frondCount = 16;
     for (let f = 0; f < frondCount; f++) {
       const angle = (f / frondCount) * Math.PI * 2;
       const frondMeshGroup = new THREE.Group();
@@ -1068,26 +1069,29 @@
 
       const leafShape = new THREE.Shape();
       leafShape.moveTo(0, 0);
-      leafShape.quadraticCurveTo(0.22, 0.12, 0.95, -0.45);
-      leafShape.quadraticCurveTo(0.2, 0.02, 0, 0);
+      leafShape.quadraticCurveTo(0.35, 0.18, 1.45, -0.65);
+      leafShape.quadraticCurveTo(0.28, 0.04, 0, 0);
 
-      const leafGeom = new THREE.ShapeGeometry(leafShape, 12);
-      const leafMat = f % 2 === 0 ? frondMatOuter : frondMatInner;
+      const leafGeom = new THREE.ShapeGeometry(leafShape, 16);
+      const leafMat = (f % 3 === 0) ? frondMatHighlight : (f % 2 === 0 ? frondMatOuter : frondMatInner);
       const leaf = new THREE.Mesh(leafGeom, leafMat);
-      leaf.rotation.x = 0.35 + (f % 3) * 0.1;
-      leaf.scale.set(1.4 * heightScale, 1.2 * heightScale, 1.4 * heightScale);
+      
+      // Dual-tier drooping angle for heavy tropical look
+      const tierPitch = (f % 2 === 0) ? 0.32 : 0.52;
+      leaf.rotation.x = tierPitch + (f % 3) * 0.08;
+      leaf.scale.set(2.2 * heightScale, 1.8 * heightScale, 2.2 * heightScale);
 
       frondMeshGroup.add(leaf);
       frondGroup.add(frondMeshGroup);
     }
     treeGroup.add(frondGroup);
 
-    // 3. Coconuts Cluster
+    // 3. Heavy Coconuts Cluster
     const coconutMat = new THREE.MeshStandardMaterial({ color: 0x3d2718, roughness: 0.8 });
-    for (let c = 0; c < 3; c++) {
-      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.1 * heightScale, 8, 8), coconutMat);
-      const cAngle = (c / 3) * Math.PI * 2;
-      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.15, crownPos.y - 0.1, crownPos.z + Math.sin(cAngle) * 0.15);
+    for (let c = 0; c < 5; c++) {
+      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.14 * heightScale, 8, 8), coconutMat);
+      const cAngle = (c / 5) * Math.PI * 2;
+      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.22, crownPos.y - 0.15, crownPos.z + Math.sin(cAngle) * 0.22);
       treeGroup.add(coconut);
     }
 
@@ -1199,14 +1203,18 @@
     initialsMonument.rotation.y = (isRightSide ? -0.35 : 0.35);
     group.add(initialsMonument);
 
-    // ---- LUXURY TROPICAL PALM TREE CLUSTER ----
-    const palm1 = buildPalmTree(1.15, 0.45);
-    palm1.position.set(0.5, 0.15, 0.2);
+    // ---- HEAVY DENSE TROPICAL PALM TREE GROVE ----
+    const palm1 = buildPalmTree(1.25, 0.4);
+    palm1.position.set(0.8, 0.15, -0.4);
     group.add(palm1);
 
-    const palm2 = buildPalmTree(0.85, -0.35);
-    palm2.position.set(-0.6, 0.1, 0.5);
+    const palm2 = buildPalmTree(1.05, -0.35);
+    palm2.position.set(-0.7, 0.1, 0.4);
     group.add(palm2);
+
+    const palm3 = buildPalmTree(0.9, 0.2);
+    palm3.position.set(-0.2, 0.12, -0.8);
+    group.add(palm3);
 
     // Flag pole carrying photo
     const poleHeight = 2.7;
@@ -1421,11 +1429,9 @@
     const { moveCamera = true, camDist = 16, camHeight = 8 } = opts;
     const p = pathAt(segF);
 
-    // Both ships share a lane off to one side of the harbor path. The offset
-    // is perpendicular to the *direction of travel*, not a fixed world axis,
-    // or they'd cut through whichever island they were passing.
-    const laneOffset = 11;    // clears the island beach radius (6.6) with margin
-    const shipGap = 3.6;      // far enough apart to read as two hulls
+    // Both ships share a lane off to one side of the harbor path.
+    const laneOffset = 8.5;   // clears island beach while keeping ships centered in camera view
+    const shipGap = 3.4;      // crisp hull separation
     shipMohit.position.x = p.x + p.perpX * (laneOffset - shipGap / 2);
     shipMohit.position.z = p.z + p.perpZ * (laneOffset - shipGap / 2);
     shipSezal.position.x = p.x + p.perpX * (laneOffset + shipGap / 2);
@@ -1440,8 +1446,9 @@
     setShipFound(shipSezal, ringSezal, true);
 
     if (moveCamera) {
-      cameraBase.pos = [p.x - p.dx * camDist, camHeight, p.z - p.dz * camDist];
-      cameraBase.look = [p.x, -0.5, p.z];
+      // 1-to-1 path camera tracking: keeps BOTH ships perfectly centered in frame during all harbour turns
+      cameraBase.pos = [p.x, camHeight + 6.0, p.z + 26];
+      cameraBase.look = [p.x, -0.5, p.z - 4];
     }
 
     // Island i sits AT path point i+1, so the ships draw level with it when
