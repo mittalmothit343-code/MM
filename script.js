@@ -385,10 +385,12 @@
     applyFraming();
 
     // ---- lights ----
-    scene.add(new THREE.AmbientLight(0x445d7a, 0.7));
-    const moon = new THREE.DirectionalLight(0x9fc0e0, 0.6);
+    scene.add(new THREE.AmbientLight(0x5a789a, 0.85));
+    const moon = new THREE.DirectionalLight(0x9fc0e0, 0.7);
     moon.position.set(-20, 30, -10);
-    scene.add(moon);
+    const fillLight = new THREE.DirectionalLight(0x7dd3fc, 0.6);
+    fillLight.position.set(30, 25, 30);
+    scene.add(moon, fillLight);
 
     // ---- starfield ----
     const starGeom = new THREE.BufferGeometry();
@@ -428,6 +430,7 @@
       shipPos[i * 3] = (Math.random() - 0.5) * 160;
       shipPos[i * 3 + 1] = -1.05 + Math.random() * 0.25; // above the wave crests
       shipPos[i * 3 + 2] = (Math.random() - 0.5) * 160;
+      shipPos[i * 3 + 2] = (Math.random() - 0.5) * 160;
       shipDrift.push({ dir: Math.random() * Math.PI * 2, speed: 0.15 + Math.random() * 0.35 });
     }
     shipGeom.setAttribute('position', new THREE.BufferAttribute(shipPos, 3));
@@ -444,10 +447,10 @@
     scene.add(anonymousShips);
 
     // ---- Mohit & Sezal: dedicated small vessels ----
-    // Mohit sails in a quiet slate-blue, Sezal in a warm dusty rose —
-    // distinct from the moment they first appear, both still lit gold once found.
-    shipMohit = buildShip(0x5f8ac9);
-    shipSezal = buildShip(0xd98fae);
+    // Mohit sails in bright luminous azure-teal, Sezal in radiant coral-pink —
+    // high contrast, beautifully illuminated across the night water.
+    shipMohit = buildShip(0x38bdf8);
+    shipSezal = buildShip(0xff8fa3);
     scene.add(shipMohit, shipSezal);
 
     ringMohit = buildGlowRing();
@@ -587,14 +590,19 @@
     hullGeom.computeVertexNormals();
 
     const hullMat = new THREE.MeshStandardMaterial({
-      color: 0x122438,
+      color: 0x1e3a5f,
       emissive: color,
-      emissiveIntensity: 0.35,
-      metalness: 0.35,
-      roughness: 0.45
+      emissiveIntensity: 0.75,
+      metalness: 0.45,
+      roughness: 0.35
     });
     const hull = new THREE.Mesh(hullGeom, hullMat);
     group.add(hull);
+
+    // Dedicated ambient ship deck light (ensures ship is always bright and glowing)
+    const deckLight = new THREE.PointLight(color, 1.2, 12);
+    deckLight.position.set(0, 0.9, 0);
+    group.add(deckLight);
 
     // 2. Polished Brass Deck Railing
     const railCurve = new THREE.CatmullRomCurve3([
@@ -678,8 +686,8 @@
 
     // 6. Curving Wind-Blown Canvas Sails (Mainsail & Jib)
     const sailMat = new THREE.MeshStandardMaterial({
-      color, emissive: color, emissiveIntensity: 0.9,
-      side: THREE.DoubleSide, transparent: true, opacity: 0.96, roughness: 0.3
+      color, emissive: color, emissiveIntensity: 1.25,
+      side: THREE.DoubleSide, transparent: true, opacity: 0.98, roughness: 0.25
     });
 
     const mainSailShape = new THREE.Shape();
