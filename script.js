@@ -734,11 +734,13 @@
     geomM.setAttribute('position', new THREE.BufferAttribute(posM, 3));
     geomS.setAttribute('position', new THREE.BufferAttribute(posS, 3));
 
+    // Mohit: Luminous Emerald Teal sea-foam
     const matM = new THREE.PointsMaterial({
-      color: 0x59f2c4, size: 3.8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0x4df2cf, size: 3.2, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false
     });
+    // Sezal: Vibrant Radiant Rose-Gold sea-foam (never washes out against sunrise!)
     const matS = new THREE.PointsMaterial({
-      color: 0xe9ce9a, size: 3.8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0xff8fa3, size: 3.2, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false
     });
 
     wakeParticlesMohit = new THREE.Points(geomM, matM);
@@ -747,8 +749,8 @@
     wakeParticlesSezal.userData = { positions: posS, count, pool: [] };
 
     for (let i = 0; i < count; i++) {
-      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 3.2 });
-      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 3.2 });
+      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.8 });
+      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.8 });
     }
 
     scene.add(wakeParticlesMohit, wakeParticlesSezal);
@@ -775,16 +777,16 @@
         const angle = ship.rotation.y;
         const cos = Math.cos(angle), sin = Math.sin(angle);
         const perpX = -sin, perpZ = cos;
-        const sideSpread = (Math.random() - 0.5) * 0.9;
+        const sideSpread = (Math.random() - 0.5) * 0.65;
         
         const sternX = ship.position.x - cos * 1.8 + perpX * sideSpread;
         const sternZ = ship.position.z + sin * 1.75 + perpZ * sideSpread;
         
         inactive.x = sternX;
         inactive.z = sternZ;
-        inactive.vx = -cos * 0.15 + perpX * sideSpread * 0.35;
-        inactive.vz = sin * 0.15 + perpZ * sideSpread * 0.35;
-        inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.08;
+        inactive.vx = -cos * 0.14 + perpX * sideSpread * 0.25;
+        inactive.vz = sin * 0.14 + perpZ * sideSpread * 0.25;
+        inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.07;
         inactive.life = inactive.maxLife;
       }
     }
@@ -910,6 +912,161 @@
     return mesh;
   }
 
+  // Builds 3D extruded metallic letter block for 'M' or 'S'
+  function create3DLetterMesh(letter, mat, scale = 0.5) {
+    const shape = new THREE.Shape();
+    if (letter === 'M') {
+      shape.moveTo(-0.4, -0.4);
+      shape.lineTo(-0.4, 0.4);
+      shape.lineTo(-0.15, 0.4);
+      shape.lineTo(0.0, 0.05);
+      shape.lineTo(0.15, 0.4);
+      shape.lineTo(0.4, 0.4);
+      shape.lineTo(0.4, -0.4);
+      shape.lineTo(0.24, -0.4);
+      shape.lineTo(0.24, 0.15);
+      shape.lineTo(0.0, -0.2);
+      shape.lineTo(-0.24, 0.15);
+      shape.lineTo(-0.24, -0.4);
+      shape.closePath();
+    } else { // 'S'
+      shape.moveTo(0.32, 0.28);
+      shape.quadraticCurveTo(0.0, 0.48, -0.28, 0.25);
+      shape.quadraticCurveTo(-0.35, 0.05, 0.0, -0.05);
+      shape.quadraticCurveTo(0.35, -0.15, 0.28, -0.32);
+      shape.quadraticCurveTo(0.0, -0.48, -0.32, -0.28);
+      shape.lineTo(-0.2, -0.15);
+      shape.quadraticCurveTo(0.0, -0.35, 0.15, -0.22);
+      shape.quadraticCurveTo(0.2, -0.08, -0.12, 0.05);
+      shape.quadraticCurveTo(-0.35, 0.22, 0.0, 0.35);
+      shape.quadraticCurveTo(0.2, 0.35, 0.2, 0.18);
+      shape.closePath();
+    }
+
+    const extrudeSettings = { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.04, bevelThickness: 0.04 };
+    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geom.center();
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.scale.set(scale, scale, scale);
+    return mesh;
+  }
+
+  // Builds a stunning 3D "M ❤️ S" monument with illuminated ruby heart
+  function create3DInitialsMonument() {
+    const monumentGroup = new THREE.Group();
+
+    // Polished Mahogany & Brass Base Pedestal
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.6, 1.8, 0.26, 20),
+      new THREE.MeshStandardMaterial({ color: 0x4a3424, roughness: 0.6, metalness: 0.2 })
+    );
+    pedestal.position.y = 0.13;
+    monumentGroup.add(pedestal);
+
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xfbe8c3,
+      emissive: 0xe9ce9a,
+      emissiveIntensity: 0.5,
+      metalness: 0.7,
+      roughness: 0.25
+    });
+
+    // 3D Metallic Gold Letter M
+    const mMesh = create3DLetterMesh('M', goldMat, 0.75);
+    mMesh.position.set(-0.92, 0.62, 0);
+    monumentGroup.add(mMesh);
+
+    // 3D Glowing Ruby Heart
+    const heartMesh = createHeartMesh(0xef4444, 0.62);
+    heartMesh.position.set(0, 0.72, 0.06);
+    heartMesh.rotation.set(0.1, 0, 0);
+    monumentGroup.add(heartMesh);
+
+    // 3D Metallic Gold Letter S
+    const sMesh = create3DLetterMesh('S', goldMat, 0.75);
+    sMesh.position.set(0.92, 0.62, 0);
+    monumentGroup.add(sMesh);
+
+    // Warm Romantic Point Light behind the heart
+    const heartLight = new THREE.PointLight(0xff4d6d, 2.2, 8.0);
+    heartLight.position.set(0, 0.75, 0.3);
+    monumentGroup.add(heartLight);
+
+    return monumentGroup;
+  }
+
+  // Builds a highly detailed, realistic tropical palm tree
+  function buildPalmTree(heightScale = 1, tiltAngle = 0) {
+    const treeGroup = new THREE.Group();
+
+    // 1. Segmented Ringed Trunk
+    const trunkSegments = 10;
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a321a, roughness: 0.85 });
+    
+    let currentPos = new THREE.Vector3(0, 0, 0);
+
+    for (let i = 0; i < trunkSegments; i++) {
+      const progress = i / trunkSegments;
+      const radiusTop = (0.13 - progress * 0.05) * heightScale;
+      const radiusBottom = (0.16 - progress * 0.05) * heightScale;
+      const segHeight = (0.32 * heightScale);
+
+      const segment = new THREE.Mesh(
+        new THREE.CylinderGeometry(radiusTop, radiusBottom, segHeight, 8),
+        trunkMat
+      );
+      segment.position.copy(currentPos);
+      segment.position.y += segHeight / 2;
+      segment.rotation.z = -tiltAngle * 0.3 * progress;
+      treeGroup.add(segment);
+
+      currentPos.y += segHeight;
+      currentPos.x += Math.sin(tiltAngle) * 0.08;
+    }
+
+    // 2. Realistic Arching Palm Leaves (Fronds)
+    const crownPos = currentPos.clone();
+    const frondGroup = new THREE.Group();
+    frondGroup.position.copy(crownPos);
+
+    const frondMatOuter = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.5, side: THREE.DoubleSide });
+    const frondMatInner = new THREE.MeshStandardMaterial({ color: 0x52b788, roughness: 0.4, side: THREE.DoubleSide });
+
+    const frondCount = 10;
+    for (let f = 0; f < frondCount; f++) {
+      const angle = (f / frondCount) * Math.PI * 2;
+      const frondMeshGroup = new THREE.Group();
+      frondMeshGroup.rotation.y = angle;
+
+      const leafShape = new THREE.Shape();
+      leafShape.moveTo(0, 0);
+      leafShape.quadraticCurveTo(0.22, 0.12, 0.95, -0.45);
+      leafShape.quadraticCurveTo(0.2, 0.02, 0, 0);
+
+      const leafGeom = new THREE.ShapeGeometry(leafShape, 12);
+      const leafMat = f % 2 === 0 ? frondMatOuter : frondMatInner;
+      const leaf = new THREE.Mesh(leafGeom, leafMat);
+      leaf.rotation.x = 0.35 + (f % 3) * 0.1;
+      leaf.scale.set(1.4 * heightScale, 1.2 * heightScale, 1.4 * heightScale);
+
+      frondMeshGroup.add(leaf);
+      frondGroup.add(frondMeshGroup);
+    }
+    treeGroup.add(frondGroup);
+
+    // 3. Coconuts Cluster
+    const coconutMat = new THREE.MeshStandardMaterial({ color: 0x3d2718, roughness: 0.8 });
+    for (let c = 0; c < 3; c++) {
+      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.1 * heightScale, 8, 8), coconutMat);
+      const cAngle = (c / 3) * Math.PI * 2;
+      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.15, crownPos.y - 0.1, crownPos.z + Math.sin(cAngle) * 0.15);
+      treeGroup.add(coconut);
+    }
+
+    treeGroup.userData.frondGroup = frondGroup;
+    return treeGroup;
+  }
+
   function buildIsland(dateLabel, harborIndex) {
     const group = new THREE.Group();
 
@@ -1008,80 +1165,20 @@
       group.add(heart);
     }
 
-    // ---- "M ❤️ S" INSCRIBED IN THE GOLDEN SAND ----
-    const sandCanvas = document.createElement('canvas');
-    sandCanvas.width = 512; sandCanvas.height = 256;
-    const sCtx = sandCanvas.getContext('2d');
-    sCtx.clearRect(0, 0, 512, 256);
-    sCtx.font = '700 72px "Fraunces", Georgia, serif';
-    sCtx.textAlign = 'center';
-    sCtx.textBaseline = 'middle';
-    sCtx.shadowColor = 'rgba(239, 68, 68, 0.85)';
-    sCtx.shadowBlur = 18;
-    sCtx.fillStyle = '#ef4444';
-    sCtx.fillText('M  ❤️  S', 256, 128);
+    // ---- 3D ILLUMINATED "M ❤️ S" ROMANTIC MONUMENT ----
+    const initialsMonument = create3DInitialsMonument();
+    initialsMonument.position.set(0, -0.05, 1.8);
+    initialsMonument.rotation.y = (isRightSide ? -0.35 : 0.35);
+    group.add(initialsMonument);
 
-    const sandTexture = new THREE.CanvasTexture(sandCanvas);
-    const sandDecalMat = new THREE.MeshStandardMaterial({
-      map: sandTexture,
-      transparent: true,
-      depthWrite: false,
-      roughness: 0.5
-    });
-    const sandDecal = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.8), sandDecalMat);
-    sandDecal.position.set(0, 0.32, 0.6);
-    sandDecal.rotation.x = -Math.PI / 2.6;
-    group.add(sandDecal);
+    // ---- LUXURY TROPICAL PALM TREE CLUSTER ----
+    const palm1 = buildPalmTree(1.15, 0.45);
+    palm1.position.set(0.5, 0.15, 0.2);
+    group.add(palm1);
 
-    // 3D Red Heart standing on the sand between M and S
-    const sandHeart = createHeartMesh(0xef4444, 0.35);
-    sandHeart.position.set(0, 0.48, 0.6);
-    sandHeart.rotation.set(0.2, Math.PI / 6, 0);
-    group.add(sandHeart);
-
-    // Beautiful Curved Palm Tree
-    const trunkCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.4, -0.2, 0.2),
-      new THREE.Vector3(0.6, 0.9, 0.25),
-      new THREE.Vector3(0.85, 2.0, 0.3),
-      new THREE.Vector3(1.05, 2.8, 0.35)
-    ]);
-    const trunkGeom = new THREE.TubeGeometry(trunkCurve, 16, 0.14, 8, false);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2718, roughness: 0.85 });
-    const trunkMesh = new THREE.Mesh(trunkGeom, trunkMat);
-    group.add(trunkMesh);
-
-    // Palm Crown & Fronds
-    const crownPos = new THREE.Vector3(1.05, 2.8, 0.35);
-    const frondMat = new THREE.MeshStandardMaterial({
-      color: 0x346b3e, roughness: 0.6, side: THREE.DoubleSide
-    });
-    const frondGroup = new THREE.Group();
-    const frondCount = 8;
-    for (let i = 0; i < frondCount; i++) {
-      const angle = (i / frondCount) * Math.PI * 2;
-      const frondCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(Math.cos(angle) * 0.8, 0.3, Math.sin(angle) * 0.8),
-        new THREE.Vector3(Math.cos(angle) * 1.5, -0.2, Math.sin(angle) * 1.5)
-      ]);
-      const frondTube = new THREE.Mesh(
-        new THREE.TubeGeometry(frondCurve, 8, 0.16, 4, false),
-        frondMat
-      );
-      frondGroup.add(frondTube);
-    }
-    frondGroup.position.copy(crownPos);
-    group.add(frondGroup);
-
-    // Coconut clusters beneath canopy
-    const coconutMat = new THREE.MeshStandardMaterial({ color: 0x5a3f21, roughness: 0.8 });
-    for (let c = 0; c < 4; c++) {
-      const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), coconutMat);
-      const cAngle = (c / 4) * Math.PI * 2;
-      coconut.position.set(crownPos.x + Math.cos(cAngle) * 0.15, crownPos.y - 0.12, crownPos.z + Math.sin(cAngle) * 0.15);
-      group.add(coconut);
-    }
+    const palm2 = buildPalmTree(0.85, -0.35);
+    palm2.position.set(-0.6, 0.1, 0.5);
+    group.add(palm2);
 
     // Flag pole carrying photo
     const poleHeight = 2.7;
@@ -2978,7 +3075,10 @@
         if (val === 'custom') {
           if (mp3Input) mp3Input.click();
         } else {
-          playRealStudioMusic(val);
+          if (mainAudioTrack) {
+            mainAudioTrack.src = 'chand_mera_dil.mp3';
+            if (state.soundEnabled) mainAudioTrack.play().catch(() => {});
+          }
         }
       });
     }
@@ -2987,14 +3087,11 @@
       mp3Input.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-          if (!studioAudioEl) {
-            studioAudioEl = new Audio();
-            studioAudioEl.loop = true;
-          }
-          studioAudioEl.src = URL.createObjectURL(file);
-          studioAudioEl.volume = state.soundEnabled ? state.volume : 0;
-          currentTrackKey = 'custom';
-          if (state.soundEnabled) studioAudioEl.play().catch(() => {});
+          if (mainAudioTrack) mainAudioTrack.pause();
+          mainAudioTrack = new Audio(URL.createObjectURL(file));
+          mainAudioTrack.loop = true;
+          mainAudioTrack.volume = state.soundEnabled ? state.volume : 0;
+          if (state.soundEnabled) mainAudioTrack.play().catch(() => {});
         }
       });
     }
