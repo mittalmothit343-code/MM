@@ -812,39 +812,34 @@
     return ring;
   }
 
-  // Lays a halo onto the water surface, following every wave under it.
+  // Lays a smooth, buttery halo on the water surface underneath the ship.
   function conformRingToSwell(ring, cx, cz, t) {
     if (ring.material.opacity <= 0.001) return;
-    ring.position.set(cx, OCEAN_Y, cz);
-    const p = ring.geometry.attributes.position;
-    const base = ring.userData.base;
-    const sx = ring.scale.x, sz = ring.scale.z;
-    for (let i = 0; i < p.count; i++) {
-      const ix = i * 3;
-      p.array[ix + 1] = waveHeight(cx + base[ix] * sx, cz + base[ix + 2] * sz, t) + 0.07;
-    }
-    p.needsUpdate = true;
+    ring.position.set(cx, OCEAN_Y + 0.08, cz);
+    // Smooth, gentle floating breath pulse with zero vertex shaking
+    const pulse = 1.0 + 0.03 * Math.sin(t * 1.8);
+    ring.scale.set(pulse, pulse, pulse);
   }
 
   // Lighting a ship up (or putting it back to dark) in one reversible call.
   function setShipFound(ship, ring, found, instant) {
-    const targetOpacity = found ? 1 : 0;
-    const targetIntensity = found ? 2.4 : 0;
+    if (ship.userData.found === found && !instant) return; // Prevent scale jumps every frame
 
     ship.userData.found = found;
     ring.userData.lit = found;
 
+    const targetOpacity = found ? 0.95 : 0;
+    const targetIntensity = found ? 2.4 : 0;
+
     if (instant || state.reducedMotion) {
-      gsap.killTweensOf([ring.material, ship.userData.light, ring.scale]);
+      gsap.killTweensOf([ring.material, ship.userData.light]);
       ring.material.opacity = targetOpacity;
       ship.userData.light.intensity = targetIntensity;
-      ring.scale.setScalar(found ? 1 : 0.3);
       return;
     }
 
-    gsap.to(ring.material, { opacity: targetOpacity, duration: 0.5, overwrite: true });
-    gsap.to(ship.userData.light, { intensity: targetIntensity, duration: 0.5, overwrite: true });
-    if (found) gsap.fromTo(ring.scale, { x: 0.3, y: 0.3, z: 0.3 }, { x: 1, y: 1, z: 1, duration: 0.8, ease: 'power3.out', overwrite: true });
+    gsap.to(ring.material, { opacity: targetOpacity, duration: 0.6, ease: 'power2.out', overwrite: true });
+    gsap.to(ship.userData.light, { intensity: targetIntensity, duration: 0.6, ease: 'power2.out', overwrite: true });
   }
 
 
