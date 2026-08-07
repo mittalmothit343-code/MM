@@ -317,8 +317,8 @@
 
   // Where each ship starts, and where they meet. Referenced by both the
   // scroll story and the film so the two never drift out of agreement.
-  const START_M = { x: -22, z: -14 };
-  const START_S = { x: 24, z: 12 };
+  const START_M = { x: -20, z: -12 };
+  const START_S = { x: 20, z: 10 };
   const MEET_M = { x: -3.4, z: -1.7 };
   const MEET_S = { x: 3.4, z: 1.7 };
 
@@ -1574,10 +1574,10 @@
   const CHAPTER_ONE_CAMERA = [
     { p: SCENE_STOP(1), pos: [0, 10, 34], look: [0, 0, 0] },
     { p: SCENE_STOP(2), pos: [0, 16, 26], look: [0, 0, -4] },
-    { p: SCENE_STOP(3), pos: [-14, 6, -2], look: [START_M.x, -1, START_M.z] },
-    { p: SCENE_STOP(4), pos: [16, 6, 20], look: [START_S.x, -1, START_S.z] },
-    { p: SCENE_STOP(5), pos: [0, 14, 30], look: [1, -1, -1] },
-    { p: SCENE_STOP(6), pos: [0, 9, 20], look: [0, -1, 0] },
+    { p: SCENE_STOP(3), pos: [-12, 6, -2], look: [START_M.x, -1, START_M.z] },
+    { p: SCENE_STOP(4), pos: [14, 6, 18], look: [START_S.x, -1, START_S.z] },
+    { p: SCENE_STOP(5), pos: [0, 22, 40], look: [0, -1, 0] },
+    { p: SCENE_STOP(6), pos: [0, 14, 28], look: [0, -1, 0] },
     { p: SCENE_STOP(7), pos: [0, 5, 10], look: [0, -1, 0] },
     { p: SCENE_STOP(8), pos: [0, 4, 8], look: [0, -1, 0] },
     { p: SCENE_STOP(9), pos: [0, 3, 6], look: [0, -1, 0] },
