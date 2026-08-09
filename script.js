@@ -215,10 +215,10 @@
         entryGate.setAttribute('aria-hidden', 'false');
         if (!librariesReady()) {
           $('#entryFallback').hidden = false;
-          $('#watchFilm').disabled = true;
+          const wf = $('#watchFilm'); if (wf) wf.disabled = true;
           $('#exploreScroll').disabled = true;
         } else {
-          $('#watchFilm').focus();
+          const wf = $('#watchFilm'); if (wf) wf.focus(); else $('#exploreScroll').focus();
           initMagneticButtons();
           initGoldenClickRipples();
           initKineticCardTilts();
@@ -236,7 +236,8 @@
     state.soundEnabled = e.target.checked;
   });
 
-  $('#watchFilm').addEventListener('click', () => beginExperience('film'));
+  const watchFilmBtn = $('#watchFilm');
+  if (watchFilmBtn) watchFilmBtn.addEventListener('click', () => beginExperience('film'));
   $('#exploreScroll').addEventListener('click', () => beginExperience('scroll'));
   const autoWatchBtn = $('#autoWatchScroll');
   if (autoWatchBtn) {
@@ -289,7 +290,8 @@
       }
 
       $('#jumpToGallery').addEventListener('click', () => scrollToEl('#gallery'));
-      $('#watchFilmFromStory').addEventListener('click', () => enterFilm());
+      const watchStoryBtn = $('#watchFilmFromStory');
+      if (watchStoryBtn) watchStoryBtn.addEventListener('click', () => enterFilm());
     } else {
       initAudio(state.soundEnabled);
     }
