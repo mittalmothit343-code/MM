@@ -297,17 +297,31 @@ input:focus-visible,
 
 .entry-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 1.75rem;
 }
 
+.entry-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  min-width: 215px;
+  padding: 0 1.85rem;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
 .btn {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--color-glass-border);
+  border: 2px solid var(--color-glass-border);
   background: var(--color-glass);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -316,7 +330,7 @@ input:focus-visible,
   border-radius: 999px;
   font-size: 1rem;
   letter-spacing: 0.02em;
-  transition: background 0.4s, border-color 0.4s;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s, transform 0.4s;
   will-change: transform;
 }
 
@@ -336,11 +350,13 @@ input:focus-visible,
 .btn-gold {
   background: linear-gradient(135deg, var(--color-gold), var(--color-gold-bright));
   color: var(--color-void);
-  border: none;
+  border: 2px solid transparent;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
+  box-shadow: 0 8px 24px rgba(198, 160, 95, 0.35);
 }
 
 .btn-play {
@@ -2024,14 +2040,16 @@ body.cinema-open .mute-toggle {
    AUTO-WATCH & ENHANCED AUDIO WIDGETS
    ========================================================================== */
 .btn-auto-watch {
-  border-color: rgba(233, 206, 154, 0.4);
+  background: rgba(11, 31, 58, 0.75);
+  border: 2px solid rgba(233, 206, 154, 0.6);
   color: var(--color-gold-bright);
+  box-shadow: 0 8px 24px rgba(4, 8, 14, 0.5), inset 0 0 12px rgba(233, 206, 154, 0.15);
 }
 
 .btn-auto-watch:hover {
-  background: rgba(233, 206, 154, 0.15);
-  border-color: var(--color-gold-bright);
-  box-shadow: 0 0 20px rgba(233, 206, 154, 0.2);
+  background: rgba(233, 206, 154, 0.2);
+  border-color: rgba(255, 230, 160, 1);
+  box-shadow: 0 0 25px rgba(233, 206, 154, 0.45), inset 0 0 16px rgba(233, 206, 154, 0.25);
 }
 
 .auto-watch-widget {
