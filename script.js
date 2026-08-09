@@ -78,7 +78,11 @@
     // files from assets/photos/harbors/ instead (see the README). You can also
     // paste an image URL or a base64 data URI straight in here.
     // Example: harborPhotos: { 1: 'https://example.com/ourphoto.jpg' }
-    harborPhotos: { 1: null, 2: null, 3: null, 4: null }
+    harborPhotos: { 1: null, 2: null, 3: null, 4: null },
+
+    // Optional photos for Scene 9 (Our Roka). Leave null to auto-discover
+    // roka-1.jpg, roka-2.jpg etc., or pass an array of image URLs.
+    rokaPhotos: null
   };
 
   // The dated log, assembled from the Roka plus every harbor above.
@@ -215,6 +219,9 @@
           $('#exploreScroll').disabled = true;
         } else {
           $('#watchFilm').focus();
+          initMagneticButtons();
+          initGoldenClickRipples();
+          initKineticCardTilts();
         }
       }
     };
@@ -261,6 +268,7 @@
       initStoryScrollTriggers();
       initShipsLog();
       initKeepsakes();
+      initRokaPhotos();
       initGallery();
       initLightbox();
       initIslandModal();
@@ -268,6 +276,9 @@
       initAudio(state.soundEnabled);
       initAudioControls();
       initAutoWatchUI();
+      initMagneticButtons();
+      initKineticCardTilts();
+      initGoldenClickRipples();
       buildFilm();
 
       const muteBtn = $('#muteToggle');
@@ -277,10 +288,6 @@
         muteBtn.addEventListener('click', toggleMute);
       }
 
-      const continueBtn = $('#continueStory');
-      if (continueBtn) {
-        continueBtn.addEventListener('click', () => scrollToEl('#chapter-two-intro'));
-      }
       $('#jumpToGallery').addEventListener('click', () => scrollToEl('#gallery'));
       $('#watchFilmFromStory').addEventListener('click', () => enterFilm());
     } else {
@@ -716,7 +723,7 @@
       hCtx.font = '500 136px "Inter", "Space Mono", Georgia, serif';
       hCtx.textAlign = 'center';
       hCtx.textBaseline = 'middle';
-      
+
       // Dark outline for ultra-high contrast and zero blur
       hCtx.lineWidth = 12;
       hCtx.strokeStyle = 'rgba(6, 11, 20, 0.95)';
@@ -732,20 +739,20 @@
       const hullInitMat = new THREE.MeshBasicMaterial({
         map: hullInitTex,
         transparent: true,
-        side: THREE.DoubleSide,
+        side: THREE.FrontSide,
         depthWrite: false
       });
 
-      // Starboard side (Right Flank)
+      // Starboard side (Right Flank: facing +Z)
       const starboardInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.5), hullInitMat);
       starboardInscription.position.set(0.1, 0.08, 0.36);
       starboardInscription.rotation.y = 0.06;
       group.add(starboardInscription);
 
-      // Port side (Left Flank)
+      // Port side (Left Flank: facing -Z, rotated 180° so text reads correctly without mirror imaging)
       const portInscription = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.5), hullInitMat);
       portInscription.position.set(0.1, 0.08, -0.36);
-      portInscription.rotation.y = -0.06;
+      portInscription.rotation.y = Math.PI - 0.06;
       group.add(portInscription);
     }
 
@@ -759,8 +766,28 @@
     return group;
   }
 
+  function createCircularParticleTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.8)');
+    grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.25)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(32, 32, 32, 0, Math.PI * 2);
+    ctx.fill();
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
   function initWakeParticles() {
-    const count = 200;
+    const count = 240;
     const geomM = new THREE.BufferGeometry();
     const geomS = new THREE.BufferGeometry();
     const posM = new Float32Array(count * 3);
@@ -769,23 +796,42 @@
     geomM.setAttribute('position', new THREE.BufferAttribute(posM, 3));
     geomS.setAttribute('position', new THREE.BufferAttribute(posS, 3));
 
+    const particleTexture = createCircularParticleTexture();
+
     // Mohit: Luminous Emerald Teal sea-foam
     const matM = new THREE.PointsMaterial({
-      color: 0x4df2cf, size: 3.2, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0x4df2cf,
+      size: 2.2,
+      map: particleTexture,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     });
-    // Sezal: Vibrant Radiant Rose-Gold sea-foam (never washes out against sunrise!)
+    // Sezal: Vibrant Radiant Rose-Gold sea-foam
     const matS = new THREE.PointsMaterial({
-      color: 0xff8fa3, size: 3.2, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false
+      color: 0xff8fa3,
+      size: 2.2,
+      map: particleTexture,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     });
 
     wakeParticlesMohit = new THREE.Points(geomM, matM);
     wakeParticlesSezal = new THREE.Points(geomS, matS);
-    wakeParticlesMohit.userData = { positions: posM, count, pool: [] };
-    wakeParticlesSezal.userData = { positions: posS, count, pool: [] };
+    wakeParticlesMohit.frustumCulled = false;
+    wakeParticlesSezal.frustumCulled = false;
+
+    wakeParticlesMohit.userData = { positions: posM, count, pool: [], lastPos: new THREE.Vector3() };
+    wakeParticlesSezal.userData = { positions: posS, count, pool: [], lastPos: new THREE.Vector3() };
 
     for (let i = 0; i < count; i++) {
-      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.8 });
-      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 2.8 });
+      wakeParticlesMohit.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 3.2 });
+      wakeParticlesSezal.userData.pool.push({ x: 0, y: -100, z: 0, vx: 0, vz: 0, life: 0, maxLife: 3.2 });
+      posM[i * 3 + 1] = -100;
+      posS[i * 3 + 1] = -100;
     }
 
     scene.add(wakeParticlesMohit, wakeParticlesSezal);
@@ -802,38 +848,57 @@
 
   function updateWakeParticles(ship, wakeSystem, t) {
     if (!wakeSystem || !ship || state.reducedMotion) return;
-    const { pool, positions, count } = wakeSystem.userData;
+    const { pool, positions, count, lastPos } = wakeSystem.userData;
     const posAttr = wakeSystem.geometry.attributes.position;
+
+    // Track ship displacement
+    const dx = ship.position.x - lastPos.x;
+    const dz = ship.position.z - lastPos.z;
+    const speed = Math.hypot(dx, dz);
+    lastPos.copy(ship.position);
+
+    const angle = ship.rotation.y;
+    // Local forward vector along local +X (in world: cos(angle), -sin(angle))
+    const fwdX = Math.cos(angle), fwdZ = -Math.sin(angle);
+    // Backward trailing vector:
+    const backX = -fwdX, backZ = -fwdZ;
+    // Perpendicular vector:
+    const perpX = -fwdZ, perpZ = fwdX;
 
     // Spawn 2 foamy wake particles trailing behind the stern every frame
     for (let spawn = 0; spawn < 2; spawn++) {
       const inactive = pool.find((p) => p.life <= 0);
       if (inactive) {
-        const angle = ship.rotation.y;
-        const cos = Math.cos(angle), sin = Math.sin(angle);
-        const perpX = -sin, perpZ = cos;
-        // Reduced thickness by 35% (0.65 -> 0.42) while preserving full tail length (maxLife = 2.8)
-        const sideSpread = (Math.random() - 0.5) * 0.42;
+        // Reduced thickness by 30%: sideSpread range = [-0.145, +0.145]
+        const sideSpread = (Math.random() - 0.5) * 0.29;
 
-        const sternX = ship.position.x - cos * 1.8 + perpX * sideSpread;
-        const sternZ = ship.position.z + sin * 1.75 + perpZ * sideSpread;
+        const sternX = ship.position.x - fwdX * 1.7 + perpX * sideSpread;
+        const sternZ = ship.position.z - fwdZ * 1.7 + perpZ * sideSpread;
 
         inactive.x = sternX;
         inactive.z = sternZ;
-        inactive.vx = -cos * 0.14 + perpX * sideSpread * 0.15;
-        inactive.vz = sin * 0.14 + perpZ * sideSpread * 0.15;
+        // Tail velocity: backward drift speed (sustains glowing tail even when stationary/anchored!)
+        const driftSpeed = 0.09 + Math.min(speed * 0.4, 0.08);
+        inactive.vx = backX * driftSpeed + perpX * sideSpread * 0.12;
+        inactive.vz = backZ * driftSpeed + perpZ * sideSpread * 0.12;
         inactive.y = OCEAN_Y + waveHeight(sternX, sternZ, t) + 0.07;
+        inactive.maxLife = 2.8 + Math.random() * 0.8;
         inactive.life = inactive.maxLife;
       }
     }
 
+    // Update active particles with organic water drag & swell height
     for (let i = 0; i < count; i++) {
       const p = pool[i];
       if (p.life > 0) {
         p.life -= 0.016;
-        p.x += p.vx * 0.06;
-        p.z += p.vz * 0.06;
-        p.y = OCEAN_Y + waveHeight(p.x, p.z, t) + 0.08;
+        p.x += p.vx * 0.85;
+        p.z += p.vz * 0.85;
+        // Gentle water drag
+        p.vx *= 0.985;
+        p.vz *= 0.985;
+        p.y = OCEAN_Y + waveHeight(p.x, p.z, t) + 0.07;
+
         positions[i * 3] = p.x;
         positions[i * 3 + 1] = p.y;
         positions[i * 3 + 2] = p.z;
@@ -924,7 +989,7 @@
   // pier with a lantern, a palm, a photo flag on a pole (falls back to a plain
   // pennant until a photo is added), and a floating date label.
   // Helper to create a 3D Extruded Heart mesh
-  function createHeartMesh(color = 0xef4444, scale = 0.28) {
+  function createHeartMesh(color = 0xef4444, scale = 0.48) {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0.25);
     shape.bezierCurveTo(0, 0.25, -0.25, 0.48, -0.48, 0.48);
@@ -933,15 +998,15 @@
     shape.bezierCurveTo(0.45, -0.42, 0.75, -0.12, 0.75, 0.18);
     shape.bezierCurveTo(0.75, 0.18, 0.75, 0.48, 0.48, 0.48);
     shape.bezierCurveTo(0.25, 0.48, 0, 0.25, 0, 0.25);
-    const extrudeSettings = { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 };
+    const extrudeSettings = { depth: 0.22, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.06, bevelThickness: 0.06 };
     const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geom.center();
     const mat = new THREE.MeshStandardMaterial({
       color: color,
-      roughness: 0.3,
-      metalness: 0.1,
+      roughness: 0.25,
+      metalness: 0.15,
       emissive: color,
-      emissiveIntensity: 0.35
+      emissiveIntensity: 0.65
     });
     const mesh = new THREE.Mesh(geom, mat);
     mesh.scale.set(scale, scale, scale);
@@ -954,9 +1019,9 @@
     if (letter === 'M') {
       shape.moveTo(-0.4, -0.4);
       shape.lineTo(-0.4, 0.4);
-      shape.lineTo(-0.15, 0.4);
-      shape.lineTo(0.0, 0.05);
-      shape.lineTo(0.15, 0.4);
+      shape.lineTo(-0.16, 0.4);
+      shape.lineTo(0.0, 0.06);
+      shape.lineTo(0.16, 0.4);
       shape.lineTo(0.4, 0.4);
       shape.lineTo(0.4, -0.4);
       shape.lineTo(0.24, -0.4);
@@ -965,21 +1030,27 @@
       shape.lineTo(-0.24, 0.15);
       shape.lineTo(-0.24, -0.4);
       shape.closePath();
-    } else { // 'S'
-      shape.moveTo(0.32, 0.28);
-      shape.quadraticCurveTo(0.0, 0.48, -0.28, 0.25);
-      shape.quadraticCurveTo(-0.35, 0.05, 0.0, -0.05);
-      shape.quadraticCurveTo(0.35, -0.15, 0.28, -0.32);
-      shape.quadraticCurveTo(0.0, -0.48, -0.32, -0.28);
-      shape.lineTo(-0.2, -0.15);
-      shape.quadraticCurveTo(0.0, -0.35, 0.15, -0.22);
-      shape.quadraticCurveTo(0.2, -0.08, -0.12, 0.05);
-      shape.quadraticCurveTo(-0.35, 0.22, 0.0, 0.35);
-      shape.quadraticCurveTo(0.2, 0.35, 0.2, 0.18);
+    } else { // 'S' - Smooth, elegant, perfectly proportioned typographic curve
+      shape.moveTo(0.28, 0.32);
+      shape.bezierCurveTo(0.18, 0.46, -0.26, 0.46, -0.30, 0.22);
+      shape.bezierCurveTo(-0.34, -0.04, 0.28, 0.02, 0.28, -0.20);
+      shape.bezierCurveTo(0.28, -0.44, -0.16, -0.46, -0.30, -0.30);
+      shape.lineTo(-0.18, -0.18);
+      shape.bezierCurveTo(-0.06, -0.30, 0.14, -0.30, 0.14, -0.18);
+      shape.bezierCurveTo(0.14, 0.04, -0.46, -0.02, -0.18, 0.22);
+      shape.bezierCurveTo(-0.04, 0.32, 0.14, 0.30, 0.18, 0.22);
       shape.closePath();
     }
 
-    const extrudeSettings = { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.04, bevelThickness: 0.04 };
+    const extrudeSettings = {
+      depth: 0.22,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      curveSegments: 32,
+      steps: 1,
+      bevelSize: 0.04,
+      bevelThickness: 0.04
+    };
     const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geom.center();
     const mesh = new THREE.Mesh(geom, mat);
@@ -987,45 +1058,54 @@
     return mesh;
   }
 
-  // Builds a stunning 3D "M ❤️ S" monument with illuminated ruby heart
+  // Builds a stunning, large-scale 3D "M ❤️ S" monument with illuminated ruby heart
   function create3DInitialsMonument() {
     const monumentGroup = new THREE.Group();
 
-    // Polished Mahogany & Brass Base Pedestal
+    // Large Polished Mahogany & Brass Base Pedestal
     const pedestal = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.6, 1.8, 0.26, 20),
-      new THREE.MeshStandardMaterial({ color: 0x4a3424, roughness: 0.6, metalness: 0.2 })
+      new THREE.CylinderGeometry(2.4, 2.7, 0.38, 24),
+      new THREE.MeshStandardMaterial({ color: 0x4a3424, roughness: 0.5, metalness: 0.3 })
     );
-    pedestal.position.y = 0.13;
+    pedestal.position.y = 0.19;
     monumentGroup.add(pedestal);
 
+    // Polished Brass Trim Ring
+    const brassTrim = new THREE.Mesh(
+      new THREE.TorusGeometry(2.55, 0.06, 12, 32),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 })
+    );
+    brassTrim.rotation.x = Math.PI / 2;
+    brassTrim.position.y = 0.38;
+    monumentGroup.add(brassTrim);
+
     const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xfbe8c3,
+      color: 0xffe8b3,
       emissive: 0xe9ce9a,
-      emissiveIntensity: 0.5,
-      metalness: 0.7,
-      roughness: 0.25
+      emissiveIntensity: 0.75,
+      metalness: 0.8,
+      roughness: 0.2
     });
 
-    // 3D Metallic Gold Letter M
-    const mMesh = create3DLetterMesh('M', goldMat, 0.75);
-    mMesh.position.set(-0.92, 0.62, 0);
+    // 3D Metallic Gold Letter M (Increased size)
+    const mMesh = create3DLetterMesh('M', goldMat, 1.35);
+    mMesh.position.set(-1.55, 1.05, 0);
     monumentGroup.add(mMesh);
 
-    // 3D Glowing Ruby Heart
-    const heartMesh = createHeartMesh(0xef4444, 0.62);
-    heartMesh.position.set(0, 0.72, 0.06);
-    heartMesh.rotation.set(0.1, 0, 0);
+    // 3D Glowing Ruby Heart (Increased size & deep radiant illumination)
+    const heartMesh = createHeartMesh(0xff2a55, 1.18);
+    heartMesh.position.set(0, 1.22, 0.08);
+    heartMesh.rotation.set(0.08, 0, 0);
     monumentGroup.add(heartMesh);
 
-    // 3D Metallic Gold Letter S
-    const sMesh = create3DLetterMesh('S', goldMat, 0.75);
-    sMesh.position.set(0.92, 0.62, 0);
+    // 3D Metallic Gold Letter S (Increased size)
+    const sMesh = create3DLetterMesh('S', goldMat, 1.35);
+    sMesh.position.set(1.55, 1.05, 0);
     monumentGroup.add(sMesh);
 
     // Warm Romantic Point Light behind the heart
-    const heartLight = new THREE.PointLight(0xff4d6d, 2.2, 8.0);
-    heartLight.position.set(0, 0.75, 0.3);
+    const heartLight = new THREE.PointLight(0xff2a55, 4.5, 14.0);
+    heartLight.position.set(0, 1.25, 0.4);
     monumentGroup.add(heartLight);
 
     return monumentGroup;
@@ -1083,7 +1163,7 @@
       const leafGeom = new THREE.ShapeGeometry(leafShape, 16);
       const leafMat = (f % 3 === 0) ? frondMatHighlight : (f % 2 === 0 ? frondMatOuter : frondMatInner);
       const leaf = new THREE.Mesh(leafGeom, leafMat);
-      
+
       // Dual-tier drooping angle for heavy tropical look
       const tierPitch = (f % 2 === 0) ? 0.32 : 0.52;
       leaf.rotation.x = tierPitch + (f % 3) * 0.08;
@@ -1111,8 +1191,8 @@
     const group = new THREE.Group();
 
     // High-intensity warm harbour island spotlight
-    const islandSpotlight = new THREE.PointLight(0xffbe66, 5.0, 22);
-    islandSpotlight.position.set(0, 3.2, 0);
+    const islandSpotlight = new THREE.PointLight(0xffbe66, 6.5, 26);
+    islandSpotlight.position.set(0, 3.8, 0);
     group.add(islandSpotlight);
 
     // Earthen mound & beach terrain
@@ -1180,52 +1260,85 @@
       group.add(bollard);
     });
 
-    // Warm Romantic Lantern at Port End
+    // Warm Romantic Lantern at Port End (Increased scale & glow!)
     const lanternX = pierX * (3.2 + quayLen);
     const lanternZ = pierZ * (3.2 + quayLen);
-    const lanternPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8), portWoodMat);
-    lanternPole.position.set(lanternX, -1.0, lanternZ);
+    const lanternPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 10), portWoodMat);
+    lanternPole.position.set(lanternX, -0.7, lanternZ);
     group.add(lanternPole);
 
     const lanternBulb = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0xffaa66, emissiveIntensity: 1.5 })
+      new THREE.SphereGeometry(0.22, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0xffaa66, emissiveIntensity: 2.0 })
     );
-    lanternBulb.position.set(lanternX, -0.55, lanternZ);
+    lanternBulb.position.set(lanternX, 0.1, lanternZ);
     group.add(lanternBulb);
 
-    const lanternLight = new THREE.PointLight(0xffaa66, 1.2, 8);
+    const lanternLight = new THREE.PointLight(0xffaa66, 2.5, 12);
     lanternLight.position.copy(lanternBulb.position);
     group.add(lanternLight);
 
-    // ---- 3D ROMANTIC HEARTS SCATTERED ON PORT DOCK ----
-    const heartColors = [0xef4444, 0xf43f5e, 0xf472b6, 0xe11d48];
-    for (let h = 0; h < 5; h++) {
-      const heart = createHeartMesh(heartColors[h % heartColors.length], 0.22 + Math.random() * 0.1);
-      const hOffset = -1.4 + h * 0.7;
+    // ---- 3D ROMANTIC HEARTS SCATTERED ON PORT DOCK (80% Larger!) ----
+    const heartColors = [0xff2a55, 0xf43f5e, 0xf472b6, 0xe11d48, 0xff758f];
+    for (let h = 0; h < 6; h++) {
+      const heart = createHeartMesh(heartColors[h % heartColors.length], 0.48 + Math.random() * 0.16);
+      const hOffset = -1.4 + h * 0.55;
       const hX = pierX * (3.2 + quayLen / 2 + hOffset * 0.4) + (Math.random() - 0.5) * 0.4;
       const hZ = pierZ * (3.2 + quayLen / 2 + hOffset * 0.4) + (Math.random() - 0.5) * 0.4;
-      heart.position.set(hX, -1.38, hZ);
+      heart.position.set(hX, -1.25, hZ);
       heart.rotation.set(-Math.PI / 2 + (Math.random() - 0.5) * 0.4, 0, Math.random() * Math.PI);
       group.add(heart);
     }
 
-    // ---- 3D ILLUMINATED "M ❤️ S" ROMANTIC MONUMENT ----
+    // ---- ROMANTIC MAHOGANY & GOLD KEEPSAKE TREASURE BOX ON DOCK ----
+    const boxGroup = new THREE.Group();
+    const boxBase = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 0.48, 0.54),
+      new THREE.MeshStandardMaterial({ color: 0x3d2516, roughness: 0.5, metalness: 0.2 })
+    );
+    boxBase.position.y = 0.24;
+    const boxLid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.27, 0.27, 0.75, 12, 1, false, 0, Math.PI),
+      new THREE.MeshStandardMaterial({ color: 0x4a2e1b, roughness: 0.5, metalness: 0.2 })
+    );
+    boxLid.rotation.z = Math.PI / 2;
+    boxLid.position.y = 0.48;
+    const boxLock = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.16, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2, emissive: 0xe9ce9a, emissiveIntensity: 0.6 })
+    );
+    boxLock.position.set(0, 0.28, 0.29);
+    boxGroup.add(boxBase, boxLid, boxLock);
+    const boxX = pierX * (3.2 + quayLen * 0.35);
+    const boxZ = pierZ * (3.2 + quayLen * 0.35);
+    boxGroup.position.set(boxX, -1.35, boxZ);
+    boxGroup.rotation.y = Math.atan2(pierZ, pierX) + 0.4;
+    group.add(boxGroup);
+
+    // ---- 3D ILLUMINATED "M ❤️ S" ROMANTIC MONUMENT (80% LARGER) ----
     const initialsMonument = create3DInitialsMonument();
-    initialsMonument.position.set(0, -0.05, 1.8);
+    initialsMonument.position.set(0, 0.08, 1.6);
     initialsMonument.rotation.y = (isRightSide ? -0.35 : 0.35);
     group.add(initialsMonument);
 
+    // Floating glowing ruby heart orbs around monument base
+    for (let p = 0; p < 4; p++) {
+      const orb = createHeartMesh(0xff2a55, 0.32);
+      const pAngle = (p / 4) * Math.PI * 2;
+      orb.position.set(Math.cos(pAngle) * 1.8, 0.55 + p * 0.15, 1.6 + Math.sin(pAngle) * 1.8);
+      group.add(orb);
+    }
+
     // ---- HEAVY DENSE TROPICAL PALM TREE GROVE ----
-    const palm1 = buildPalmTree(1.25, 0.4);
+    const palm1 = buildPalmTree(1.35, 0.4);
     palm1.position.set(0.8, 0.15, -0.4);
     group.add(palm1);
 
-    const palm2 = buildPalmTree(1.05, -0.35);
+    const palm2 = buildPalmTree(1.15, -0.35);
     palm2.position.set(-0.7, 0.1, 0.4);
     group.add(palm2);
 
-    const palm3 = buildPalmTree(0.9, 0.2);
+    const palm3 = buildPalmTree(1.0, 0.2);
     palm3.position.set(-0.2, 0.12, -0.8);
     group.add(palm3);
 
@@ -1268,7 +1381,7 @@
     const texture = new THREE.CanvasTexture(canvas);
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
     sprite.scale.set(5.8, 2.1, 1);
-    sprite.position.set(0, 6.8, 0);
+    sprite.position.set(0, 7.2, 0);
     group.add(sprite);
 
     Object.assign(group.userData, { mound, cap, sprite, flag, harborIndex, dateLabel });
@@ -1372,6 +1485,7 @@
       updateWakeParticles(shipMohit, wakeParticlesMohit, t);
       updateWakeParticles(shipSezal, wakeParticlesSezal, t);
       updateShootingStar();
+      updateRadarBlips();
       if (starField) starField.material.size = 0.7 + Math.sin(t * 1.8) * 0.12;
 
       // ---- islands stay completely stationary on water ----
@@ -1449,13 +1563,13 @@
     const spline = getHarborSpline();
     const totalSegs = ISLAND_PATH.length - 1;
     const u = clamp01(segF / totalSegs);
-    
+
     const point = spline.getPointAt(u);
     const tangent = spline.getTangentAt(u);
     let dx = tangent.x, dz = tangent.z;
     const dlen = Math.hypot(dx, dz) || 1;
     dx /= dlen; dz /= dlen;
-    
+
     return { x: point.x, z: point.z, dx, dz, perpX: -dz, perpZ: dx };
   }
 
@@ -1557,13 +1671,23 @@
     radarPingInterval = null;
   }
 
-  function spawnBlip(locked, atAngle) {
+  function spawnBlip(locked, atAngle, worldPos) {
     const ns = 'http://www.w3.org/2000/svg';
-    const angle = atAngle !== undefined ? atAngle : Math.random() * Math.PI * 2;
-    const radius = 14 + Math.random() * 78;
+    let cx = 100, cy = 100;
+
+    if (worldPos) {
+      cx = Number((100 + worldPos.x * 2.68).toFixed(1));
+      cy = Number((100 + worldPos.z * 2.68).toFixed(1));
+    } else {
+      const angle = atAngle !== undefined ? atAngle : Math.random() * Math.PI * 2;
+      const radius = 14 + Math.random() * 78;
+      cx = Number((100 + Math.cos(angle) * radius).toFixed(1));
+      cy = Number((100 + Math.sin(angle) * radius).toFixed(1));
+    }
+
     const circle = document.createElementNS(ns, 'circle');
-    circle.setAttribute('cx', (100 + Math.cos(angle) * radius).toFixed(1));
-    circle.setAttribute('cy', (100 + Math.sin(angle) * radius).toFixed(1));
+    circle.setAttribute('cx', String(cx));
+    circle.setAttribute('cy', String(cy));
     circle.setAttribute('r', locked ? '4.5' : '2.5');
     circle.setAttribute('class', locked ? 'radar-blip locked' : 'radar-blip pulse');
     radarBlipsGroup.appendChild(circle);
@@ -1571,17 +1695,35 @@
     return circle;
   }
 
-  // Locked blips are keyed so the story can take them back off the scope when
-  // the viewer scrolls back before the moment of contact.
-  function setLockedBlip(key, on, angle) {
+  // Locked blips dynamically track actual 3D vessel coordinates on the radar scope
+  function setLockedBlip(key, on, shipRef) {
     if (on && !lockedBlips[key]) {
-      lockedBlips[key] = spawnBlip(true, angle);
+      lockedBlips[key] = spawnBlip(true, undefined, shipRef ? shipRef.position : null);
       if (!film.seeking) playTargetLock(); // silent while someone drags the playhead
     } else if (!on && lockedBlips[key]) {
       lockedBlips[key].remove();
       delete lockedBlips[key];
     }
   }
+
+  function updateRadarBlips() {
+    if (!state.radarActive) return;
+
+    if (lockedBlips['mohit'] && shipMohit) {
+      const cx = (100 + shipMohit.position.x * 2.68).toFixed(1);
+      const cy = (100 + shipMohit.position.z * 2.68).toFixed(1);
+      lockedBlips['mohit'].setAttribute('cx', String(cx));
+      lockedBlips['mohit'].setAttribute('cy', String(cy));
+    }
+
+    if (lockedBlips['sezal'] && shipSezal) {
+      const cx = (100 + shipSezal.position.x * 2.68).toFixed(1);
+      const cy = (100 + shipSezal.position.z * 2.68).toFixed(1);
+      lockedBlips['sezal'].setAttribute('cx', String(cx));
+      lockedBlips['sezal'].setAttribute('cy', String(cy));
+    }
+  }
+
   function clearLockedBlips() {
     Object.keys(lockedBlips).forEach((k) => { lockedBlips[k].remove(); delete lockedBlips[k]; });
   }
@@ -1695,8 +1837,9 @@
     // Beautiful target circles stay glowing around the ships once detected
     setShipFound(shipMohit, ringMohit, mohitOn);
     setShipFound(shipSezal, ringSezal, sezalOn);
-    setLockedBlip('mohit', mohitOn, -Math.PI * 0.75);
-    setLockedBlip('sezal', sezalOn, Math.PI * 0.2);
+    setLockedBlip('mohit', mohitOn, shipMohit);
+    setLockedBlip('sezal', sezalOn, shipSezal);
+    updateRadarBlips();
 
     setRadarStatus(
       metOn ? 'TARGET FOUND'
@@ -2211,6 +2354,7 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightboxFrom(galleryPhotos, i); }
       });
       galleryGrid.appendChild(card);
+      applyKineticTilt(card);
 
       gsap.to(card, {
         opacity: 1, y: 0, duration: 0.8, delay: (i % 6) * 0.06, ease: 'power3.out',
@@ -2227,6 +2371,150 @@
       parX((e.clientX / window.innerWidth - 0.5) * 6);
       parY((e.clientY / window.innerHeight - 0.5) * 6);
     }, { passive: true });
+  }
+
+  /* ---- Roka photos discovery & rendering ---- */
+  async function discoverRokaPhotos() {
+    if (CONFIG.rokaPhotos && Array.isArray(CONFIG.rokaPhotos) && CONFIG.rokaPhotos.length > 0) {
+      return CONFIG.rokaPhotos;
+    }
+    const exts = CONFIG.galleryProbe.extensions;
+    const found = [];
+    const dirsToProbe = ['', './', 'photos/', 'assets/photos/', 'assets/'];
+
+    // 1. Probe specific roka-1.jpg, roka-2.jpg, ... roka-6.jpg
+    for (let n = 1; n <= 6; n++) {
+      let hitUrl = null;
+      for (const dir of dirsToProbe) {
+        const filenames = [`roka-${n}`, `roka${n}`];
+        for (const name of filenames) {
+          // eslint-disable-next-line no-await-in-loop
+          const results = await Promise.all(exts.map((ext) => probeImage(`${dir}${name}.${ext}`)));
+          const hitIdx = results.indexOf(true);
+          if (hitIdx > -1) {
+            hitUrl = `${dir}${name}.${exts[hitIdx]}`;
+            break;
+          }
+        }
+        if (hitUrl) break;
+      }
+      if (hitUrl) found.push(hitUrl);
+    }
+
+    // 2. Fallback if no roka-*.jpg found: use 1.jpg, 2.jpg, 3.jpg as defaults
+    if (found.length === 0) {
+      for (let n = 1; n <= 3; n++) {
+        let hitUrl = null;
+        for (const dir of dirsToProbe) {
+          const filenames = [`${n}`, `1-${n}`];
+          for (const name of filenames) {
+            // eslint-disable-next-line no-await-in-loop
+            const results = await Promise.all(exts.map((ext) => probeImage(`${dir}${name}.${ext}`)));
+            const hitIdx = results.indexOf(true);
+            if (hitIdx > -1) {
+              hitUrl = `${dir}${name}.${exts[hitIdx]}`;
+              break;
+            }
+          }
+          if (hitUrl) break;
+        }
+        if (hitUrl) found.push(hitUrl);
+      }
+    }
+
+    return found;
+  }
+
+  async function initRokaPhotos() {
+    const grid = $('#rokaPhotosGrid');
+    if (!grid) return;
+    const urls = await discoverRokaPhotos();
+    if (!urls || !urls.length) return;
+
+    const rokaPhotoItems = urls.map((url, i) => ({
+      url,
+      alt: `Our Roka Photo ${i + 1} — ${CONFIG.names.first} & ${CONFIG.names.second}`
+    }));
+
+    grid.innerHTML = '';
+
+    const row1 = document.createElement('div');
+    row1.className = 'roka-row roka-row-1';
+
+    const row2 = document.createElement('div');
+    row2.className = 'roka-row roka-row-2';
+
+    const row3 = document.createElement('div');
+    row3.className = 'roka-row roka-row-3';
+
+    grid.append(row1, row2, row3);
+
+    urls.forEach((url, i) => {
+      const card = document.createElement('div');
+      // Photos 1, 2, 3 default to landscape (4:3); Photos 4, 5 default to portrait (3:4)
+      const initialAspectClass = (i < 3) ? 'is-landscape' : 'is-portrait';
+      card.className = `roka-photo-card ${initialAspectClass}`;
+      card.setAttribute('role', 'listitem');
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', `Open Roka photo ${i + 1} of ${urls.length}`);
+
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'roka-photo-img-wrap';
+
+      const img = document.createElement('img');
+      img.className = 'roka-photo-img';
+      img.src = url;
+      img.alt = rokaPhotoItems[i].alt;
+      img.loading = 'lazy';
+      img.addEventListener('load', () => {
+        img.classList.add('loaded');
+        const isPortrait = img.naturalHeight > img.naturalWidth;
+        card.classList.remove('is-landscape', 'is-portrait');
+        card.classList.add(isPortrait ? 'is-portrait' : 'is-landscape');
+      });
+
+      imgWrap.append(img);
+      card.append(imgWrap);
+      applyKineticTilt(card);
+      card.addEventListener('click', () => openLightboxFrom(rokaPhotoItems, i));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightboxFrom(rokaPhotoItems, i); }
+      });
+
+      // Structure rows: Photos 1&2 -> Row 1, Photo 3 -> Row 2 (centered), Photos 4&5 -> Row 3
+      if (i < 2) {
+        row1.appendChild(card);
+      } else if (i === 2) {
+        row2.appendChild(card);
+      } else {
+        row3.appendChild(card);
+      }
+
+      if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined' && !state.reducedMotion) {
+        gsap.to(card, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.8,
+          delay: i * 0.12,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 92%',
+            toggleActions: 'play none none reverse',
+            onEnter: () => card.classList.add('is-visible')
+          }
+        });
+      } else {
+        card.classList.add('is-visible');
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      }
+    });
+
+    if (typeof ScrollTrigger !== 'undefined') {
+      ScrollTrigger.refresh();
+    }
   }
 
   /* ---- lightbox ---- */
@@ -2264,9 +2552,17 @@
     lastFocused = document.activeElement;
     activePhotos = photosArray;
     lightbox.hidden = false;
-    requestAnimationFrame(() => lightbox.classList.add('open'));
+    lightbox.classList.add('open');
     showLightbox(index);
     $('#lightboxClose').focus();
+
+    if (!state.reducedMotion && typeof gsap !== 'undefined') {
+      gsap.fromTo(lightbox, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out', overwrite: 'auto' });
+      gsap.fromTo(lightboxImg, 
+        { scale: 0.82, opacity: 0, y: 24 }, 
+        { scale: 1, opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.6)', overwrite: 'auto' }
+      );
+    }
   }
 
   function showLightbox(index) {
@@ -2278,12 +2574,23 @@
   }
 
   function closeLightbox() {
-    lightbox.classList.remove('open');
-    setTimeout(() => {
+    if (!state.reducedMotion && typeof gsap !== 'undefined') {
+      gsap.to(lightboxImg, { scale: 0.9, opacity: 0, y: 12, duration: 0.3, ease: 'power2.in', overwrite: 'auto' });
+      gsap.to(lightbox, {
+        opacity: 0, duration: 0.35, ease: 'power2.in', overwrite: 'auto',
+        onComplete: () => {
+          lightbox.classList.remove('open');
+          lightbox.hidden = true;
+          lightboxImg.removeAttribute('src');
+          if (lastFocused && lastFocused.isConnected) lastFocused.focus();
+        }
+      });
+    } else {
+      lightbox.classList.remove('open');
       lightbox.hidden = true;
       lightboxImg.removeAttribute('src');
       if (lastFocused && lastFocused.isConnected) lastFocused.focus();
-    }, 400);
+    }
   }
 
   /* ---- island popup ---- */
@@ -2411,8 +2718,16 @@
     note.textContent = '';
 
     islandModal.hidden = false;
-    requestAnimationFrame(() => islandModal.classList.add('open'));
+    islandModal.classList.add('open');
     $('#islandModalClose').focus();
+
+    if (!state.reducedMotion && typeof gsap !== 'undefined') {
+      gsap.fromTo(islandModal, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out', overwrite: 'auto' });
+      gsap.fromTo('.island-modal-card',
+        { scale: 0.84, opacity: 0, y: 28 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.5)', overwrite: 'auto' }
+      );
+    }
 
     const realPhotos = await discoverHarborPhotos(harborIndex);
     const usingPlaceholders = realPhotos.length === 0;
@@ -2438,6 +2753,7 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightboxFrom(photosForLightbox, i); }
       });
       grid.appendChild(thumb);
+      applyKineticTilt(thumb);
     });
 
     if (usingPlaceholders) {
@@ -2446,11 +2762,135 @@
   }
 
   function closeIslandPopup() {
-    islandModal.classList.remove('open');
-    setTimeout(() => {
+    const card = $('.island-modal-card');
+    if (!state.reducedMotion && typeof gsap !== 'undefined' && card) {
+      gsap.to(card, { scale: 0.9, opacity: 0, y: 12, duration: 0.3, ease: 'power2.in', overwrite: 'auto' });
+      gsap.to(islandModal, {
+        opacity: 0, duration: 0.35, ease: 'power2.in', overwrite: 'auto',
+        onComplete: () => {
+          islandModal.classList.remove('open');
+          islandModal.hidden = true;
+          if (islandLastFocused && islandLastFocused.isConnected) islandLastFocused.focus();
+        }
+      });
+    } else {
+      islandModal.classList.remove('open');
       islandModal.hidden = true;
       if (islandLastFocused && islandLastFocused.isConnected) islandLastFocused.focus();
-    }, 400);
+    }
+  }
+
+  /* ---- Framer Motion-Style UI Physics & Micro-Interactions ---- */
+  function initMagneticButtons() {
+    const targets = $$('.btn, .transport-btn, .mute-toggle, .aw-btn, .aw-speed-btn, .aw-close-btn, .lightbox-close, .lightbox-nav');
+    targets.forEach((btn) => {
+      if (btn.dataset.magneticInit) return;
+      btn.dataset.magneticInit = 'true';
+
+      btn.addEventListener('mousemove', (e) => {
+        if (state.reducedMotion) return;
+        const rect = btn.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+
+        gsap.to(btn, {
+          x: dx * 0.32,
+          y: dy * 0.32,
+          duration: 0.35,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        if (state.reducedMotion) return;
+        gsap.to(btn, {
+          x: 0,
+          y: 0,
+          duration: 0.75,
+          ease: 'elastic.out(1.1, 0.4)',
+          overwrite: 'auto'
+        });
+      });
+    });
+  }
+
+  function applyKineticTilt(card) {
+    if (!card || card.dataset.tiltInit) return;
+    card.dataset.tiltInit = 'true';
+
+    card.addEventListener('mousemove', (e) => {
+      if (state.reducedMotion) return;
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
+
+      gsap.to(card, {
+        rotateX: -dy * 9,
+        rotateY: dx * 9,
+        scale: 1.04,
+        transformPerspective: 900,
+        duration: 0.4,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    });
+
+    card.addEventListener('mouseleave', () => {
+      if (state.reducedMotion) return;
+      gsap.to(card, {
+        rotateX: 0,
+        rotateY: 0,
+        scale: 1,
+        duration: 0.75,
+        ease: 'elastic.out(1, 0.4)',
+        overwrite: 'auto'
+      });
+    });
+  }
+
+  function initKineticCardTilts() {
+    $$('.roka-photo-card, .harbor-photo, .gallery-card, .island-modal-thumb').forEach(applyKineticTilt);
+  }
+
+  function initGoldenClickRipples() {
+    if (document.dataset?.rippleInit) return;
+    if (document.dataset) document.dataset.rippleInit = 'true';
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn, .roka-photo-card, .harbor-photo, .gallery-card, .island-modal-thumb, .transport-btn, .mute-toggle, .aw-btn');
+      if (!btn || state.reducedMotion) return;
+
+      const rect = btn.getBoundingClientRect();
+      const circle = document.createElement('span');
+      circle.className = 'gold-click-ripple';
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${e.clientX - rect.left - radius}px`;
+      circle.style.top = `${e.clientY - rect.top - radius}px`;
+
+      const existing = btn.querySelector('.gold-click-ripple');
+      if (existing) existing.remove();
+
+      btn.appendChild(circle);
+
+      gsap.fromTo(circle,
+        { scale: 0, opacity: 0.65 },
+        {
+          scale: 2.2,
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          onComplete: () => circle.remove()
+        }
+      );
+    });
   }
 
   /* ------------------------------------------------------------------------
@@ -2735,8 +3175,9 @@
     // Beautiful target circles stay glowing around the ships once detected
     setShipFound(shipMohit, ringMohit, mohitOn);
     setShipFound(shipSezal, ringSezal, sezalOn);
-    setLockedBlip('mohit', mohitOn, -Math.PI * 0.75);
-    setLockedBlip('sezal', sezalOn, Math.PI * 0.2);
+    setLockedBlip('mohit', mohitOn, shipMohit);
+    setLockedBlip('sezal', sezalOn, shipSezal);
+    updateRadarBlips();
 
     setRadarStatus(
       metOn ? 'TARGET FOUND'

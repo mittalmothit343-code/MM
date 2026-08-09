@@ -1,3 +1,12 @@
+ROKA PHOTOS
+===========
+Photos for Scene IX ("Our Roka"). Name them roka-1.jpg, roka-2.jpg, roka-3.jpg and so on:
+
+    roka-1.jpg   roka-2.jpg   roka-3.jpg     <- Shown directly in Scene IX ("Our Roka")
+
+Alternatively, pass an array of image URLs to `CONFIG.rokaPhotos` in script.js.
+
+
 HARBOUR PHOTOS
 ==============
 Photos from one particular meeting. The first photo of each harbour becomes
